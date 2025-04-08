@@ -48,11 +48,10 @@
     <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Newtonsoft.Json.dll" />
     <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Twitch.Common.dll" />
     <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\websocket-sharp.dll" />
-    
-    
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Class1.cs" />
+    <Compile Include="Backup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLith.KingGame.Backend", "NLith.KingGame.Models\NLith.KingGame.Backend.csproj", "{F49F215A-2931-4A83-BEA4-DCFD646E1343}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "King Game Main", "King Game Main\King Game Main.csproj", "{643F2163-CC10-4310-8C5C-836DB64F11CE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "King Game Main", "King_Game_Main\King Game Main.csproj", "{643F2163-CC10-4310-8C5C-836DB64F11CE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F49F215A-2931-4A83-BEA4-DCFD646E1343} = {F49F215A-2931-4A83-BEA4-DCFD646E1343}
 	EndProjectSection
