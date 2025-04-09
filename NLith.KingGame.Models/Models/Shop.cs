@@ -3,7 +3,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using NLith.KingGame.Backend.Service;
+using NLith.KingGame.Backend.Services;
 
 namespace NLith.KingGame.Backend.Models
 {

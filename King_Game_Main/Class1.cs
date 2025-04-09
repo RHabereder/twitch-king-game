@@ -1,85 +1,37 @@
 ﻿using Streamer.bot.Plugin.Interface;
 using Streamer.bot.Plugin.Interface.Model;
 using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using Twitch.Common.Models;
 using NLith.KingGame.Backend.Models;
-using NLith.KingGame.Backend.Service;
+using NLith.KingGame.Backend.Services;
 
-public class CPHInline: CPHInlineBase
+public class CPHInline : CPHInlineBase
 {
+    public ChatterService chatterService;
 
-    // Configuration has moved to Models/cs
-    // Streamer-Level Configuration
-    // Name of your currency
-    public static string CURRENCY_SYMBOL = "NL$";
-    public static string CURRENCY_NAME = "NLithium";
-    // Should all values be persistent, or should everything start over every stream?
-    public static bool IS_GAME_PERSISTENT = true;
-    // Time in Minutes that a King is protected after Crowning or a failed Regicide attempt
-    public static double KINGS_PROTECTION_LENGTH = 5d;
+    /*****************************************
+     *                                       *
+     * Config was moved to ConfigService.cs! *
+     *                                       *
+     *****************************************/
 
-    // Controls Integrations and integral rewards
-    public static bool ENABLE_TTS = true;
-    public static bool GIVE_VIP_ON_CROWNING = true;
-
-    // Reduction of hard-coded strings
-    public static string TWITCH_ANNOUNCE_COLOR_DEFAULT = "Default";
-    public static string TWITCH_ANNOUNCE_COLOR_BLUE = "Blue";
-    public static string TWITCH_ANNOUNCE_COLOR_GREEN = "Green";
-    public static string TWITCH_ANNOUNCE_COLOR_ORANGE = "Orange";
-    public static string TWITCH_ANNOUNCE_COLOR_PURPLE = "Purple";
-
-
-    // Var Names
-    // These can be anything and are only used to reduce Hard-coded strings
-    // They shouldn't be changed while a game is in progress, otherwise it might screw with peoples Wallets 
-    public static string TOOL_SHOP_VAR_NAME = "toolShop";
-    public static string EQUIPMENT_SHOP_VAR_NAME = "equipmentShop";
-    public static string PLAYER_PROFILE_VAR_NAME = "profile";
-    public static string PLAYER_MONEY_VAR_NAME = "loyaltyPoints";
-    public static string CUSTOM_TAX_RATE_VAR_NAME = "kingsSetTax";
-    public static string KINGS_PROTECTION_VAR_NAME = "isKingProtected";
-    public static string KINGS_NAME_VAR_NAME = "king";
-    public static string INVENTORY_VAR_NAME = "inventory";
-    public static string INSURANCE_VAR_NAME = "hasInsurance";
-
-
-    // Economy Vars
-    public static int INSURANCE_FEE_AMOUNT = 1000;
-    public static int INITIAL_TAX_RATE = 10;               // Can be overriden by the king via !taxrate <any number>
-    public static int REGICIDE_REWARD_AMOUNT = 5000;
-    public static int REGICIDE_FAILURE_AMOUNT = 2500;
-    public static int CROWNING_BONUS_AMOUNT = 10000;
-    public static int PAID_ANNOUNCEMENT_PRICE = 10000;
-    public static int DUEL_BONUS_AMOUNT = 1000;
-    public static int MINING_MINIMUM_REWARD_AMOUNT = 100;
-    public static int MINING_MAXIMUM_REWARD_AMOUNT = 800;
-    public static int MINING_MINIMUM_FINE_AMOUNT = 100;
-    public static int MINING_MAXIMUM_FINE_AMOUNT = 800;
-
-    // Loot Table
-    // Definition in Nlith.KingGame.Models.ItemGenerator#L19
-
-    // RNG Vars
-    public static int MINING_INITIAL_ACCIDENT_RATE = 10;
-    public static int INITIAL_JAIL_TIME = 30;
-    public static int MINING_TREASURE_RATE = 20;
-
-
-    //TTS Vars
-    public static Dictionary<VoiceTypes, string> VOICE_TYPE_VOICE_ID_MAPPING = new Dictionary<VoiceTypes, string>()
+    /// <summary>
+    ///     Function that manages and returns the ChatterService instance to simulate a singleton
+    /// </summary>
+    /// <returns>
+    ///     An instance of ChatterService
+    /// </returns>
+    /// <seealso cref="ChatterService"/>
+    private ChatterService GetChatterService()
     {
-        { VoiceTypes.QUEEN, "Queen Announcer" },
-        { VoiceTypes.KING, "King Announcer" },
-        { VoiceTypes.REGULAR, "Peasant Announcer" },
-    };
-
-    // Filepaths
-    public static  string PATH_ACTIVE_CHATTERS_FILE = "./activeChatters.txt";          // Path to File where active Chatters should be written to (should be truncated on every start)
-
+        if (this.chatterService == null)
+        {
+            this.chatterService = new ChatterService(CPH, ConfigService.PATH_ACTIVE_CHATTERS_FILE, ConfigService.MONITOR_KNOWN_BOTS, ConfigService.MONITOR_BOTS_AS_CHATTER, ConfigService.MONITOR_BROADCASTER_AS_CHATTER, ConfigService.MONITOR_DENY_LIST);
+        }
+        return this.chatterService;
+    }
 
     /// <summary>
     ///     Used for debugging, so you don't have to remap Commands all the time
@@ -90,12 +42,14 @@ public class CPHInline: CPHInlineBase
     public bool Debug()
     {
 
-        CPH.SendMessage("Debugging Command received", true, true);
+        return true;
+    }
 
-        foreach (var key in args.Keys)
-        {
-            CPH.SendMessage(string.Format("key {0}:{1}", key, args[key].ToString()));
-        }
+    public bool AddUserToMonitoringFile()
+    {
+        chatterService = GetChatterService();
+        chatterService.AddChatterToMonitoringFile(args["user"].ToString());
+
         return true;
     }
 
@@ -107,9 +61,8 @@ public class CPHInline: CPHInlineBase
     /// <returns>Boolean required by Streamerbot</returns>
     public bool BuyInsurance()
     {
-        FinePlayerAmount(GetCurrentUserName(), INSURANCE_FEE_AMOUNT);
-        SetUserVariable(INSURANCE_VAR_NAME, true);
-
+        FinePlayerAmount(GetCurrentUserName(), ConfigService.INSURANCE_FEE_AMOUNT);
+        SetUserVariable(ConfigService.INSURANCE_VAR_NAME, true);
         return true;
     }
 
@@ -165,9 +118,9 @@ public class CPHInline: CPHInlineBase
     /// <returns></returns>
     private void JailUser(String username, String reason)
     {
-        CPH.TwitchTimeoutUser(username, INITIAL_JAIL_TIME, reason);
+        CPH.TwitchTimeoutUser(username, ConfigService.INITIAL_JAIL_TIME, reason);
         CPH.PlaySoundFromFolder("C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\KingGame\\Jail", 75, false, true);
-        string announcement = string.Format("User {0} has been Jailed for {1} seconds for: {2}", username, INITIAL_JAIL_TIME, reason);
+        string announcement = string.Format("User {0} has been Jailed for {1} seconds for: {2}", username, ConfigService.INITIAL_JAIL_TIME, reason);
         AnnounceToAudience(announcement);
     }
 
@@ -233,7 +186,7 @@ public class CPHInline: CPHInlineBase
 
             SetPlayerInventory(inv);
             AwardPlayerAmount(GetCurrentUserName(), item.Value);
-            SendTwitchReply(string.Format("You sold your {0} for {1} {2}!", itemName, item.Value, CURRENCY_NAME));
+            SendTwitchReply(string.Format("You sold your {0} for {1} {2}!", itemName, item.Value, ConfigService.CURRENCY_NAME));
             return true;
         }
         else
@@ -257,7 +210,7 @@ public class CPHInline: CPHInlineBase
 
         SetPlayerInventory(inv);
         AwardPlayerAmount(GetCurrentUserName(), totalTreasureValue);
-        SendTwitchReply(string.Format("You sold all your treasures for {0} {1}!", totalTreasureValue, CURRENCY_NAME));
+        SendTwitchReply(string.Format("You sold all your treasures for {0} {1}!", totalTreasureValue, ConfigService.CURRENCY_NAME));
     }
 
 
@@ -270,10 +223,10 @@ public class CPHInline: CPHInlineBase
         CPH.ClearNonPersistedGlobals();
         CPH.ClearNonPersistedUserGlobals();
 
-        CPH.UnsetAllUsersVar(PLAYER_MONEY_VAR_NAME);
-        CPH.UnsetAllUsersVar(INVENTORY_VAR_NAME);
-        CPH.UnsetGlobalVar(KINGS_NAME_VAR_NAME);
-        CPH.UnsetGlobalVar(KINGS_PROTECTION_VAR_NAME);
+        CPH.UnsetAllUsersVar(ConfigService.PLAYER_MONEY_VAR_NAME);
+        CPH.UnsetAllUsersVar(ConfigService.INVENTORY_VAR_NAME);
+        CPH.UnsetGlobalVar(ConfigService.KINGS_NAME_VAR_NAME);
+        CPH.UnsetGlobalVar(ConfigService.KINGS_PROTECTION_VAR_NAME);
 
         return true;
     }
@@ -290,11 +243,11 @@ public class CPHInline: CPHInlineBase
 
         Shop<Equipment> equipmentShop = new Shop<Equipment>();
         equipmentShop.RestockShop();
-        SetGlobalVariable<Shop<Equipment>>(EQUIPMENT_SHOP_VAR_NAME, equipmentShop);
+        SetGlobalVariable<Shop<Equipment>>(ConfigService.EQUIPMENT_SHOP_VAR_NAME, equipmentShop);
 
         Shop<Tool> toolShop = new Shop<Tool>();
         toolShop.RestockShop();
-        SetGlobalVariable<Shop<Tool>>(TOOL_SHOP_VAR_NAME, toolShop);
+        SetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME, toolShop);
 
         return true;
 
@@ -319,16 +272,16 @@ public class CPHInline: CPHInlineBase
     /// <returns></returns>
     public bool DisplayShopStock()
     {
-        Shop<Tool> toolShop = GetGlobalVariable<Shop<Tool>>(TOOL_SHOP_VAR_NAME);
+        Shop<Tool> toolShop = GetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME);
         CPH.LogInfo("Shop: " + toolShop);
 
         String items = "";
         toolShop.Items.ForEach(item => {
-            items += string.Format("{0}({1} {2}), ", item.Name, item.Value, CURRENCY_SYMBOL);
+            items += string.Format("{0}({1} {2}), ", item.Name, item.Value, ConfigService.CURRENCY_SYMBOL);
         });
         CPH.LogInfo("Items in Shop: " + items);
         CPH.LogInfo("Items in Class: " + toolShop.Items.Count);
-        CPH.TwitchAnnounce(string.Format("The Shop has the following things in Stock: {0}", items), true, TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
+        CPH.TwitchAnnounce(string.Format("The Shop has the following things in Stock: {0}", items), true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
 
         return true;
     }
@@ -348,7 +301,7 @@ public class CPHInline: CPHInlineBase
             CPH.LogDebug("5");
             string currentKing = GetKingUsername();
             CPH.LogDebug("6");
-            CPH.TwitchAnnounce(string.Format("{0} has abdicated voluntarily, or by force of the council (other VIPs), a new King shall be crowned!", currentKing), true, TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
+            CPH.TwitchAnnounce(string.Format("{0} has abdicated voluntarily, or by force of the council (other VIPs), a new King shall be crowned!", currentKing), true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
             CPH.LogDebug("7");
             CrownRandomChatter();
         }
@@ -361,7 +314,7 @@ public class CPHInline: CPHInlineBase
     /// <returns></returns>
     public bool CrownRandomChatter()
     {
-        CPH.TwitchAnnounce("Due to absence of a King, a random Chatter shall now be crowned!", true, TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
+        CPH.TwitchAnnounce("Due to absence of a King, a random Chatter shall now be crowned!", true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
         if (CPH.TryGetArg("foundUserName0", out string userName))
         {
             userName = SanitizeUsername(userName);
@@ -398,12 +351,12 @@ public class CPHInline: CPHInlineBase
         if (roll > 50)
         {
             DuelWin();
-            CPH.SendMessage(string.Format("User {0} has won the duel against {1} and has been rewarded {2} {3}!", GetCurrentUserName(), target, DUEL_BONUS_AMOUNT, CURRENCY_NAME), true, true);
+            CPH.SendMessage(string.Format("User {0} has won the duel against {1} and has been rewarded {2} {3}!", GetCurrentUserName(), target, ConfigService.DUEL_BONUS_AMOUNT, ConfigService.CURRENCY_NAME), true, true);
         }
         else
         {
             DuelFail();
-            CPH.SendMessage(string.Format("User {0} has lost the duel against {1} and has to pay {2} {3} in hospital bills!", GetCurrentUserName(), target, DUEL_BONUS_AMOUNT, CURRENCY_NAME), true, true);
+            CPH.SendMessage(string.Format("User {0} has lost the duel against {1} and has to pay {2} {3} in hospital bills!", GetCurrentUserName(), target, ConfigService.DUEL_BONUS_AMOUNT, ConfigService.CURRENCY_NAME), true, true);
         }
 
         return true;
@@ -428,7 +381,7 @@ public class CPHInline: CPHInlineBase
             }
             if (UserHasEnoughMoneyToGift(grantor, sum))
             {
-                CPH.SendMessage(string.Format("{0} decided to gift {1} the sum of {2} {3}! {1} don't forget to say thank you!", grantor, grantee, sum, CURRENCY_NAME));
+                CPH.SendMessage(string.Format("{0} decided to gift {1} the sum of {2} {3}! {1} don't forget to say thank you!", grantor, grantee, sum, ConfigService.CURRENCY_NAME));
                 GiveMoneyFromTo(grantor, grantee, sum);
             }
             else
@@ -448,7 +401,7 @@ public class CPHInline: CPHInlineBase
     /// <returns></returns>
     private bool UserHasEnoughMoneyToGift(string username, int sum)
     {
-        return (sum < GetCurrentUserVariable<int>(PLAYER_MONEY_VAR_NAME));
+        return (sum < GetCurrentUserVariable<int>(ConfigService.PLAYER_MONEY_VAR_NAME));
     }
 
     /// <summary>
@@ -473,17 +426,17 @@ public class CPHInline: CPHInlineBase
     public bool CrownChatter(string username, bool suppressMessage)
     {
         CPH.LogDebug("12");
-        SetGlobalVariable(KINGS_NAME_VAR_NAME, username);
+        SetGlobalVariable(ConfigService.KINGS_NAME_VAR_NAME, username);
         CPH.LogDebug("13");
         string currentKing = GetKingUsername();
         CPH.LogDebug("14");
         if (!suppressMessage)
         {
             CPH.TwitchAnnounce(string.Format("Chatter {0} has been crowned King! They have been rewarded VIP, 10.000 {1}, and can be challenged for their crown in 5 minutes with the !regicide command!", 
-                currentKing, CURRENCY_NAME), true, TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
+                currentKing, ConfigService.CURRENCY_NAME), true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
         }
         CPH.TwitchAddVip(currentKing);
-        AwardPlayerAmount(currentKing, CROWNING_BONUS_AMOUNT);
+        AwardPlayerAmount(currentKing, ConfigService.CROWNING_BONUS_AMOUNT);
         SetKingsProtection(true);
 
         return true;
@@ -497,9 +450,9 @@ public class CPHInline: CPHInlineBase
     {
         string user = GetCurrentUserName();
         CPH.LogDebug("Prepare for boom");
-        int balance = GetUserVariable<int>(user, PLAYER_MONEY_VAR_NAME);
+        int balance = GetUserVariable<int>(user, ConfigService.PLAYER_MONEY_VAR_NAME);
         CPH.LogDebug("Current Balance of Player: " + user + " is " + balance);
-        SendTwitchReply(string.Format("Hey {0}, your current {1} Balance is: {2}!", user, CURRENCY_NAME, balance));
+        SendTwitchReply(string.Format("Hey {0}, your current {1} Balance is: {2}!", user, ConfigService.CURRENCY_NAME, balance));
         return true;
     }
 
@@ -510,8 +463,8 @@ public class CPHInline: CPHInlineBase
     public bool Coffers()
     {
         string currentKing = GetKingUsername();
-        int balance = CPH.GetTwitchUserVar<int>(currentKing, PLAYER_MONEY_VAR_NAME, true);
-        SendTwitchReply(string.Format("Hey {0}, King {1} currently has {2} {3}!", GetCurrentUserName(), currentKing, balance, CURRENCY_NAME));
+        int balance = CPH.GetTwitchUserVar<int>(currentKing, ConfigService.PLAYER_MONEY_VAR_NAME, true);
+        SendTwitchReply(string.Format("Hey {0}, King {1} currently has {2} {3}!", GetCurrentUserName(), currentKing, balance, ConfigService.CURRENCY_NAME));
 
         return true;
     }
@@ -564,7 +517,7 @@ public class CPHInline: CPHInlineBase
     /// </summary>
     private void RegicideFailure()
     {
-        FinePlayerAmount(GetCurrentUserName(), REGICIDE_REWARD_AMOUNT);
+        FinePlayerAmount(GetCurrentUserName(), ConfigService.REGICIDE_REWARD_AMOUNT);
         JailUser(GetCurrentUserName(), "Attempted Murder of the King!");        
     }
     /// <summary>
@@ -575,8 +528,8 @@ public class CPHInline: CPHInlineBase
     /// </summary>
     private void RegicideSuccess()
     {
-        FinePlayerAmount(GetKingUsername(), REGICIDE_FAILURE_AMOUNT);
-        AwardPlayerAmount(GetCurrentUserName(), REGICIDE_FAILURE_AMOUNT);
+        FinePlayerAmount(GetKingUsername(), ConfigService.REGICIDE_FAILURE_AMOUNT);
+        AwardPlayerAmount(GetCurrentUserName(), ConfigService.REGICIDE_FAILURE_AMOUNT);
         KillKing();
         CrownChatter(GetCurrentUserName(), false);
     }
@@ -586,7 +539,7 @@ public class CPHInline: CPHInlineBase
     /// </summary>
     private void DuelWin()
     {
-        AwardPlayerAmount(GetCurrentUserName(), DUEL_BONUS_AMOUNT);
+        AwardPlayerAmount(GetCurrentUserName(), ConfigService.DUEL_BONUS_AMOUNT);
     }
 
     /// <summary>
@@ -594,7 +547,7 @@ public class CPHInline: CPHInlineBase
     /// </summary>
     private void DuelFail()
     {
-        FinePlayerAmount(GetCurrentUserName(), DUEL_BONUS_AMOUNT);
+        FinePlayerAmount(GetCurrentUserName(), ConfigService.DUEL_BONUS_AMOUNT);
     }
 
     /// <summary>
@@ -649,7 +602,7 @@ public class CPHInline: CPHInlineBase
     /// <returns></returns>
     private bool CheckKingsProtection()
     {
-        return GetGlobalVariable<bool>(KINGS_PROTECTION_VAR_NAME);
+        return GetGlobalVariable<bool>(ConfigService.KINGS_PROTECTION_VAR_NAME);
     }
     /// <summary>
     ///     Internal Method to set the Kings Protection Status
@@ -657,7 +610,7 @@ public class CPHInline: CPHInlineBase
     /// <param name="isProtected"></param>
     private void SetKingsProtection(bool isProtected)
     {
-        SetGlobalVariable(KINGS_PROTECTION_VAR_NAME, DateTime.Now.AddMinutes(5d));
+        SetGlobalVariable(ConfigService.KINGS_PROTECTION_VAR_NAME, DateTime.Now.AddMinutes(5d));
     }
 
     /// <summary>
@@ -675,17 +628,17 @@ public class CPHInline: CPHInlineBase
     /// <returns></returns>
     private bool SetTax(float newRate)
     {
-        float oldRate = GetGlobalVariable<float>(CUSTOM_TAX_RATE_VAR_NAME);
+        float oldRate = GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
         // In case the rate has never been changed yet, this might throw an error, so we set the default just to be sure     
         if (oldRate == 0)
         {
-            oldRate = INITIAL_TAX_RATE;
+            oldRate = ConfigService.INITIAL_TAX_RATE;
         }
         string announcement = string.Format("Hear ye, hear ye! King {0} changed the taxes from {1}% to {2}%, effective immediately!", GetKingUsername(), oldRate, newRate);
         AnnounceToAudience(announcement);
         
 
-        SetGlobalVariable(CUSTOM_TAX_RATE_VAR_NAME, newRate);
+        SetGlobalVariable(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, newRate);
         return true;
     }
 
@@ -709,10 +662,10 @@ public class CPHInline: CPHInlineBase
             Inventory inv = GetPlayerInventory(GetCurrentUserName());
 
             // Roll for the Haul-Amount
-            int haul = randGen.Next(MINING_MINIMUM_REWARD_AMOUNT, MINING_MAXIMUM_REWARD_AMOUNT);
+            int haul = randGen.Next(ConfigService.MINING_MINIMUM_REWARD_AMOUNT, ConfigService.MINING_MAXIMUM_REWARD_AMOUNT);
 
             // Apply the Rollboosts            
-            if (randGen.Next(100) < (MINING_TREASURE_RATE + inv.CurrentRollBost))
+            if (randGen.Next(100) < (ConfigService.MINING_TREASURE_RATE + inv.CurrentRollBost))
             {
                 TreasureService gen = new TreasureService();
                 Item item = gen.GenerateTreasure();
@@ -720,13 +673,13 @@ public class CPHInline: CPHInlineBase
                 SetPlayerInventory(inv);
 
                 string announcement = string.Format("User {0} just found a {1} {2}! Congratulations on your find!!", GetCurrentUserName(), item.Tier.ToString(), item.Name);
-                SendTwitchReply(string.Format("You found a hidden treasure! You found a {0} {1} which is worth {2} {3} (tax-free)!", item.Tier.ToString(), item.Name, item.Value, CURRENCY_NAME));
+                SendTwitchReply(string.Format("You found a hidden treasure! You found a {0} {1} which is worth {2} {3} (tax-free)!", item.Tier.ToString(), item.Name, item.Value, ConfigService.CURRENCY_NAME));
                 AnnounceToAudience(announcement);
             }
 
 
             // Mining has a chance to result in Injury
-            if (new Random().Next(100) < (MINING_INITIAL_ACCIDENT_RATE - inv.CurrentInjuryReduction))
+            if (new Random().Next(100) < (ConfigService.MINING_INITIAL_ACCIDENT_RATE - inv.CurrentInjuryReduction))
             {
                 MiningAccident();
                 inv.ReduceEquipmentDurability();
@@ -738,7 +691,7 @@ public class CPHInline: CPHInlineBase
                 int paidSalary = PayMiner(GetCurrentUserName(), haul);
 
                 SendTwitchReply(string.Format("@{0} you mined {1} {2}! You paid {3} {2} in Taxes and were rewarded the remaining {4} {2}!",
-                        GetCurrentUserName(), haul, CURRENCY_NAME, paidTaxes, paidSalary));
+                        GetCurrentUserName(), haul, ConfigService.CURRENCY_NAME, paidTaxes, paidSalary));
             }
         }
 
@@ -789,11 +742,11 @@ public class CPHInline: CPHInlineBase
     /// <returns>Inventory of the Player</returns>
     private Inventory GetPlayerInventory(string user)
     {
-        Inventory inv = GetUserVariable<Inventory>(user, INVENTORY_VAR_NAME);
+        Inventory inv = GetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME);
         if (inv == null)
         {
             inv = new Inventory();
-            SetCurrentUserVariable<Inventory>(INVENTORY_VAR_NAME);
+            SetCurrentUserVariable<Inventory>(ConfigService.INVENTORY_VAR_NAME);
         }
         return inv;
     }
@@ -804,7 +757,7 @@ public class CPHInline: CPHInlineBase
     /// <param name="inv"></param>
     private void SetPlayerInventory(Inventory inv)
     {
-        SetUserVariable(INVENTORY_VAR_NAME, inv);
+        SetUserVariable(ConfigService.INVENTORY_VAR_NAME, inv);
     }
 
 
@@ -820,10 +773,10 @@ public class CPHInline: CPHInlineBase
         CPH.LogInfo("Resetting Account of " + username);
         Inventory inventory = new Inventory();
         CPH.LogInfo("Resetting inventory of " + username);
-        SetUserVariable(INVENTORY_VAR_NAME, inventory);
+        SetUserVariable(ConfigService.INVENTORY_VAR_NAME, inventory);
 
         CPH.LogInfo("Resetting wallet of " + username);
-        CPH.SetTwitchUserVar(username, PLAYER_MONEY_VAR_NAME, 0, true);
+        CPH.SetTwitchUserVar(username, ConfigService.PLAYER_MONEY_VAR_NAME, 0, true);
         SendTwitchReply(string.Format("@{0} your points and inventory were reset!", username));
         return true;
     }
@@ -891,11 +844,11 @@ public class CPHInline: CPHInlineBase
     public bool MiningAccident()
     {
         Random randomGen = new Random();
-        int fine = randomGen.Next(MINING_MINIMUM_FINE_AMOUNT, MINING_MAXIMUM_FINE_AMOUNT);
+        int fine = randomGen.Next(ConfigService.MINING_MINIMUM_FINE_AMOUNT, ConfigService.MINING_MAXIMUM_FINE_AMOUNT);
         FinePlayerAmount(GetCurrentUserName(), fine);
 
         CallTTS(VoiceTypes.REGULAR, string.Format("Weeeee you weeeee you, here comes the ambulance to rescue {0}!", GetCurrentUserName()), false);
-        SendTwitchReply(string.Format("Oh no! You had a terrible accident while mining! ({0}% chance). The treatment cost you {1} {2}", MINING_INITIAL_ACCIDENT_RATE, fine, CURRENCY_NAME));
+        SendTwitchReply(string.Format("Oh no! You had a terrible accident while mining! ({0}% chance). The treatment cost you {1} {2}", ConfigService.MINING_INITIAL_ACCIDENT_RATE, fine, ConfigService.CURRENCY_NAME));
         return true;
     }
 
@@ -936,13 +889,13 @@ public class CPHInline: CPHInlineBase
     private float GetTaxRate()
     {
         float taxRate;
-        if (GetGlobalVariable<float>(CUSTOM_TAX_RATE_VAR_NAME) == 0)
+        if (GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME) == 0)
         {
-            taxRate = INITIAL_TAX_RATE;
+            taxRate = ConfigService.INITIAL_TAX_RATE;
         }
         else
         {
-            taxRate = GetGlobalVariable<float>(CUSTOM_TAX_RATE_VAR_NAME);
+            taxRate = GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
         }
 
         return taxRate;
@@ -985,8 +938,8 @@ public class CPHInline: CPHInlineBase
         CPH.LogDebug("4");
         CPH.LogDebug("444");
         CPH.LogDebug("44444");
-        CPH.LogDebug("KINGS_NAME_VAR_NAME: " + KINGS_NAME_VAR_NAME);
-        return GetGlobalVariable<string>(KINGS_NAME_VAR_NAME);
+        CPH.LogDebug("KINGS_NAME_VAR_NAME: " + ConfigService.KINGS_NAME_VAR_NAME);
+        return GetGlobalVariable<string>(ConfigService.KINGS_NAME_VAR_NAME);
     }
 
     /// <summary>
@@ -1000,11 +953,11 @@ public class CPHInline: CPHInlineBase
         CPH.LogInfo("Username :" + username);
         username = SanitizeUsername(username);
         CPH.LogInfo("Sanitized Username :" + username);
-        int currentBalance = CPH.GetTwitchUserVar<int>(username, PLAYER_MONEY_VAR_NAME, true);
+        int currentBalance = CPH.GetTwitchUserVar<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME, true);
         CPH.LogInfo("Current Balance :" + currentBalance);
         currentBalance += amount;
         CPH.LogInfo("Setting Walletbalance to :" + currentBalance);
-        CPH.SetTwitchUserVar(username, PLAYER_MONEY_VAR_NAME, currentBalance, true);
+        CPH.SetTwitchUserVar(username, ConfigService.PLAYER_MONEY_VAR_NAME, currentBalance, true);
     }
 
     /// <summary>
@@ -1030,9 +983,9 @@ public class CPHInline: CPHInlineBase
     /// <param name="amount">Amount to be fined</param>
     private void FinePlayerAmount(string username, int amount)
     {
-        int currentBalance = CPH.GetTwitchUserVar<int>(username, PLAYER_MONEY_VAR_NAME, true);
+        int currentBalance = CPH.GetTwitchUserVar<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME, true);
         currentBalance -= amount;
-        CPH.SetTwitchUserVar(username, PLAYER_MONEY_VAR_NAME, currentBalance, true);
+        CPH.SetTwitchUserVar(username, ConfigService.PLAYER_MONEY_VAR_NAME, currentBalance, true);
     }
 
     
@@ -1053,7 +1006,7 @@ public class CPHInline: CPHInlineBase
             {
                 items += string.Format("{0}({1})", item.Name, item.Value) + ", ";
             });
-            SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, CURRENCY_NAME));
+            SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, ConfigService.CURRENCY_NAME));
         }
         else
         {
@@ -1078,7 +1031,7 @@ public class CPHInline: CPHInlineBase
                 switch (item.GetType().Name)
                 {
                     case "Equipment":
-                        items += string.Format("{0}({1} {2})", item.Name, item.Value, CURRENCY_SYMBOL) + ", ";
+                        items += string.Format("{0}({1} {2})", item.Name, item.Value, ConfigService.CURRENCY_SYMBOL) + ", ";
                         break;
                     case "Tool":
                         Tool tool = (Tool)item;
@@ -1086,7 +1039,7 @@ public class CPHInline: CPHInlineBase
                         break;
                 }
             });
-            SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalTreasureWorth, CURRENCY_NAME));
+            SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalTreasureWorth, ConfigService.CURRENCY_NAME));
         }
         else
         {
@@ -1113,7 +1066,7 @@ public class CPHInline: CPHInlineBase
                 items += string.Format("{0}({1})", item.Name, item.Value) + ", ";
             });
 
-            items = string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, CURRENCY_NAME);
+            items = string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, ConfigService.CURRENCY_NAME);
             while (items.Length > 450)
             {
                 itemMessages.Add(items.Substring(0, 450));
@@ -1151,7 +1104,7 @@ public class CPHInline: CPHInlineBase
                 CallTTS(VoiceTypes.KING, GetCommandArgument(), false);
             }
 
-            CPH.TwitchAnnounce(GetCommandArgument(), true, TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
+            CPH.TwitchAnnounce(GetCommandArgument(), true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
         }
         else
         {
@@ -1167,15 +1120,15 @@ public class CPHInline: CPHInlineBase
     /// <returns></returns>
     public bool PaidAnnouncement()
     {
-        if (UserHasEnoughMoneyToGift(GetCurrentUserName(), PAID_ANNOUNCEMENT_PRICE))
+        if (UserHasEnoughMoneyToGift(GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE))
         {
-            String announcement = string.Format("User {0} paid {1} {2} for the following announcement: {3}", GetCurrentUserName(), PAID_ANNOUNCEMENT_PRICE, CURRENCY_NAME, GetCommandArgument());
-            FinePlayerAmount(GetCurrentUserName(), PAID_ANNOUNCEMENT_PRICE);
+            String announcement = string.Format("User {0} paid {1} {2} for the following announcement: {3}", GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE, ConfigService.CURRENCY_NAME, GetCommandArgument());
+            FinePlayerAmount(GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE);
             AnnounceToAudience(announcement);
         }
         else
         {
-            SendTwitchReply(string.Format("Announcements cost {0} {1}, which you can't afford right now!", PAID_ANNOUNCEMENT_PRICE, CURRENCY_SYMBOL));
+            SendTwitchReply(string.Format("Announcements cost {0} {1}, which you can't afford right now!", ConfigService.PAID_ANNOUNCEMENT_PRICE, ConfigService.CURRENCY_SYMBOL));
         }
 
         return true;
@@ -1187,7 +1140,7 @@ public class CPHInline: CPHInlineBase
     /// <param name="announcement">String that represents the announcement text</param>
     private void AnnounceToAudience(string announcement)
     {
-        CPH.TwitchAnnounce(announcement, true, TWITCH_ANNOUNCE_COLOR_DEFAULT, false);
+        CPH.TwitchAnnounce(announcement, true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, false);
         CallTTS(VoiceTypes.KING, announcement, false);
     }
 
@@ -1199,9 +1152,9 @@ public class CPHInline: CPHInlineBase
     /// <param name="isPaidAnnouncement">Boolean flag to mark an announcement as paid</param>
     private void CallTTS(VoiceTypes voice, string announcement, bool isPaidAnnouncement)
     {
-        if(ENABLE_TTS)
+        if(ConfigService.ENABLE_TTS)
         {
-            CPH.TtsSpeak(VOICE_TYPE_VOICE_ID_MAPPING[voice], announcement, true);
+            CPH.TtsSpeak(ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[voice], announcement, true);
         } 
         else
         {
@@ -1210,7 +1163,7 @@ public class CPHInline: CPHInlineBase
             // If it was a paid announcement, refund the cost
             if(isPaidAnnouncement)
             {
-                AwardPlayerAmount(GetCurrentUserName(), PAID_ANNOUNCEMENT_PRICE);
+                AwardPlayerAmount(GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE);
             }
         }
     }
@@ -1252,7 +1205,7 @@ public class CPHInline: CPHInlineBase
     /// <param name="value">New value to be set</param>
     private void SetUserVariable<T>(string name, T value)
     {
-        CPH.SetTwitchUserVar(GetCurrentUserName(), name, value, IS_GAME_PERSISTENT);
+        CPH.SetTwitchUserVar(GetCurrentUserName(), name, value, ConfigService.IS_GAME_PERSISTENT);
     }
 
     /// <summary>
@@ -1264,7 +1217,7 @@ public class CPHInline: CPHInlineBase
     /// <returns>Deserialized Global-Scope Variable</returns>
     private T GetGlobalVariable<T>(string name)
     {
-        return CPH.GetGlobalVar<T>(name, IS_GAME_PERSISTENT);
+        return CPH.GetGlobalVar<T>(name, ConfigService.IS_GAME_PERSISTENT);
     }
 
     /// <summary>
@@ -1276,7 +1229,7 @@ public class CPHInline: CPHInlineBase
     /// <param name="value">New Value of the Global-Var</param>
     private void SetGlobalVariable<T>(string name, T value)
     {
-        CPH.SetGlobalVar(name, value, IS_GAME_PERSISTENT);
+        CPH.SetGlobalVar(name, value, ConfigService.IS_GAME_PERSISTENT);
     }
 
     /// <summary>
@@ -1288,7 +1241,7 @@ public class CPHInline: CPHInlineBase
     /// <returns>Deserialized User-Scope Variable</returns>
     private T GetUserVariable<T>(string username, string varname)
     {
-        return CPH.GetTwitchUserVar<T>(username, varname, IS_GAME_PERSISTENT);
+        return CPH.GetTwitchUserVar<T>(username, varname, ConfigService.IS_GAME_PERSISTENT);
     }
 
     /// <summary>

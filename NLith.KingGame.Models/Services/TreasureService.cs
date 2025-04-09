@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NLith.KingGame.Backend.Models;
 
-namespace NLith.KingGame.Backend.Service
+namespace NLith.KingGame.Backend.Services
 {
     public class TreasureService
     {
@@ -38,6 +38,10 @@ namespace NLith.KingGame.Backend.Service
 
         private readonly Dictionary<ItemTier, Tuple<int, int>> tierMap;
         private readonly Dictionary<ItemTier, List<String>> itemNames;
+
+        /// <summary>
+        ///     Zero-Args Constructor that generates the Loot-Table
+        /// </summary>
         public TreasureService()
         {
             tierMap = new Dictionary<ItemTier, Tuple<int, int>>
@@ -165,6 +169,12 @@ namespace NLith.KingGame.Backend.Service
         }
 
 
+        /// <summary>
+        ///     Generates a random Treasure
+        /// </summary>
+        /// <returns>
+        ///     A Random Treasure from the Loot-Table
+        /// </returns>
         public Treasure GenerateTreasure()
         {
             ItemTier tier;
@@ -203,6 +213,14 @@ namespace NLith.KingGame.Backend.Service
             };
         }
 
+        /// <summary>
+        ///     Generates a random Treasure of the specified ItemTier
+        /// </summary>
+        /// <param name="tier">ItemTier that specifies the rarity of an Item</param>
+        /// <returns>
+        ///     A treasure of the specified ItemTier
+        /// </returns>        
+        /// <seealso cref="ItemTier"/>
         public Item GenerateTreasure(ItemTier tier)
         {
             // First we roll for the Item Tier

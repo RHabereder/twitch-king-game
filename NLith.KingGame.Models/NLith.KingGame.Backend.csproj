@@ -66,6 +66,7 @@
     <Compile Include="Services\ChatterService.cs" />
     <Compile Include="Services\TreasureService.cs" />
     <Compile Include="Services\ToolService.cs" />
+	<Compile Include="Services\ConfigService.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

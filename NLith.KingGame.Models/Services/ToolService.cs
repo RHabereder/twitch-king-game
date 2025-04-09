@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NLith.KingGame.Backend.Models;
 
-namespace NLith.KingGame.Backend.Service
+namespace NLith.KingGame.Backend.Services
 {
     public class ToolService
     {
@@ -40,6 +40,10 @@ namespace NLith.KingGame.Backend.Service
         private List<Tool> allTools;
         private readonly Dictionary<ItemTier, List<String>> toolTierMapping = new Dictionary<ItemTier, List<String>>();
 
+        /// <summary>
+        /// Zero-Args Constructor that also generates the Loot-Table
+        /// Items should maybe be fed in from JSON in the future
+        /// </summary>
         public ToolService()
         {
             allTools = new List<Tool>();
@@ -82,18 +86,23 @@ namespace NLith.KingGame.Backend.Service
             allTools.AddRange(godlikeTools);
         }
 
-        /**
-         * Picks a random tool from the Tool Table
-         **/
+        /// <summary>
+        ///     Picks a random tool from the Tool Table
+        /// </summary>
+        /// <returns>
+        ///     A random Tool from the Loot-Table
+        /// </returns>
         public Tool GenerateTool()
         {
             Random random = new Random();
             return allTools[random.Next(allTools.Count)];
         }
 
-         /**
-         * Generates a list of unique Tools 
-         **/
+        /// <summary>
+        ///     Generates a list of unique Tools 
+        /// </summary>
+        /// <param name="amount">Integer that defines the number of Tools to generate</param>
+        /// <returns>A List of Tools of the specified number</returns>
         public List<Tool> GenerateTools(int amount)
         {            
             Random random = new Random();
@@ -108,9 +117,14 @@ namespace NLith.KingGame.Backend.Service
             return tools;
         }
 
-        /**
-         * Picks a random tool from the Tool Table
-         **/
+
+        /// <summary>
+        ///     Picks a random tool of a specified Tier from the Tool Table
+        /// </summary>
+        /// <param name="tier">ItemTier that should be randomly picked from</param>
+        /// <returns>A Tool-Object of the specified ItemTier</returns>
+        /// <seealso cref="allTools"/>
+        /// <seealso cref="ItemTier"/>
         public Tool GenerateToolWithTier(ItemTier tier)
         {
             Random random = new Random();
