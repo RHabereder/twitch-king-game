@@ -34,6 +34,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -51,6 +52,7 @@
     <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\websocket-sharp.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Adventure.cs" />
     <Compile Include="Models\Inventory.cs" />
     <Compile Include="Models\Item.cs" />
     <Compile Include="Models\Treasure.cs" />
@@ -63,10 +65,20 @@
     <Compile Include="Models\VoiceEnum.cs" />
     <Compile Include="Models\Wallet.cs" />
     <Compile Include="Models\Shop.cs" />
+    <Compile Include="Services\AdventureService.cs" />
     <Compile Include="Services\ChatterService.cs" />
+    <Compile Include="Services\MessageService.cs" />
     <Compile Include="Services\TreasureService.cs" />
     <Compile Include="Services\ToolService.cs" />
-	<Compile Include="Services\ConfigService.cs" />
+    <Compile Include="Services\ConfigService.cs" />
+    <Compile Include="Services\TTSService.cs" />
+    <Compile Include="Services\UserService.cs" />
+    <Compile Include="Services\VarService.cs" />
+    <Compile Include="Services\WalletService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\adventures.json" />
+    <None Include="Resources\kingly_expeditions.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

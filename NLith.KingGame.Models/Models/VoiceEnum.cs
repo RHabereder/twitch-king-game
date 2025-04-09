@@ -10,6 +10,9 @@ namespace NLith.KingGame.Backend.Models
     {
         KING,
         QUEEN,
-        REGULAR
+        REGULAR,
+        ADVENTURE,
+        EXPEDITION,
+        ASSASSIN
     }
 }

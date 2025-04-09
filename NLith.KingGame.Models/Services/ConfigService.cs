@@ -74,6 +74,9 @@ namespace NLith.KingGame.Backend.Services
         { VoiceTypes.QUEEN, "Queen Announcer" },
         { VoiceTypes.KING, "King Announcer" },
         { VoiceTypes.REGULAR, "Peasant Announcer" },
+        { VoiceTypes.EXPEDITION, "Expedition Narrator" },
+        { VoiceTypes.ADVENTURE, "Adventure Narrator" },
+        { VoiceTypes.ASSASSIN, "Assassin Voice" },
     };
 
         // Chatter Monitoring

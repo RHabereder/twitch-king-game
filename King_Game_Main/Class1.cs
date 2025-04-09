@@ -1,11 +1,9 @@
-﻿using Streamer.bot.Plugin.Interface;
+﻿using NLith.KingGame.Backend.Models;
+using NLith.KingGame.Backend.Services;
+using Streamer.bot.Plugin.Interface;
 using Streamer.bot.Plugin.Interface.Model;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using Twitch.Common.Models;
-using NLith.KingGame.Backend.Models;
-using NLith.KingGame.Backend.Services;
 
 public class CPHInline : CPHInlineBase
 {
@@ -41,7 +39,13 @@ public class CPHInline : CPHInlineBase
     /// </returns>
     public bool Debug()
     {
+        AdventureService advService = new AdventureService(CPH);
+        UserService usrService = new UserService(CPH);
 
+        string announcement = string.Format("Our Monarch {0} has decided to embark on an Expedition! This is how it turned out.", GetKingUsername());
+        AnnounceToAudience(announcement);
+        CPH.Wait(6000);
+        advService.GenerateAdventure(GetKingUsername());
         return true;
     }
 
@@ -61,8 +65,12 @@ public class CPHInline : CPHInlineBase
     /// <returns>Boolean required by Streamerbot</returns>
     public bool BuyInsurance()
     {
-        FinePlayerAmount(GetCurrentUserName(), ConfigService.INSURANCE_FEE_AMOUNT);
-        SetUserVariable(ConfigService.INSURANCE_VAR_NAME, true);
+        WalletService walletService = new WalletService(CPH);
+        VarService varService = new VarService(CPH);
+        UserService userService = new UserService(CPH);
+
+        walletService.FinePlayerAmount(userService.GetCurrentUserName(args), ConfigService.INSURANCE_FEE_AMOUNT);
+        varService.SetUserVariable(userService.GetCurrentUserName(args), ConfigService.INSURANCE_VAR_NAME, true);
         return true;
     }
 
@@ -73,10 +81,12 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool Jail()
     {
+        MessageService msgService = new MessageService(CPH);
         if (CurrentUserIsKing())
         {
             String userToJail = GetCommandArgumentAtPosition(0);
-            userToJail = SanitizeUsername(userToJail);
+            UserService userService = new UserService(CPH);
+            userToJail = userService.SanitizeUsername(userToJail);
 
             CPH.LogInfo(String.Format("User To Jail: {0}", userToJail));
 
@@ -104,7 +114,7 @@ public class CPHInline : CPHInlineBase
         }
         else
         {
-            SendTwitchReply("Only the king can jail people!");
+            msgService.SendTwitchReply("Only the king can jail people!");
         }
 
         return true;
@@ -151,7 +161,11 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     private bool SellSingleItem(string itemName)
     {
-        Inventory inv = GetPlayerInventory(GetCurrentUserName());
+        MessageService msgService = new MessageService(CPH);
+        WalletService walletService = new WalletService(CPH);
+        UserService userService = new UserService(CPH);
+
+        Inventory inv = GetPlayerInventory(userService.GetCurrentUserName(args));
 
         Item item = null;
 
@@ -184,14 +198,14 @@ public class CPHInline : CPHInlineBase
                     break;
             }
 
-            SetPlayerInventory(inv);
-            AwardPlayerAmount(GetCurrentUserName(), item.Value);
-            SendTwitchReply(string.Format("You sold your {0} for {1} {2}!", itemName, item.Value, ConfigService.CURRENCY_NAME));
+            SetPlayerInventory(userService.GetCurrentUserName(args), inv);
+            walletService.AwardPlayerAmount(userService.GetCurrentUserName(args), item.Value);
+            msgService.SendTwitchReply(string.Format("You sold your {0} for {1} {2}!", itemName, item.Value, ConfigService.CURRENCY_NAME));
             return true;
         }
         else
         {
-            SendTwitchReply(string.Format("You don't have a {0} in your inventory!", itemName));
+            msgService.SendTwitchReply(string.Format("You don't have a {0} in your inventory!", itemName));
             return false;
         }
     }
@@ -202,15 +216,19 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     private void SellAllTreasures()
     {
-        Inventory inv = GetPlayerInventory(GetCurrentUserName());
+        UserService userService = new UserService(CPH);
+        WalletService walletService = new WalletService(CPH);
+        MessageService msgService = new MessageService(CPH);
+        
+        Inventory inv = GetPlayerInventory(userService.GetCurrentUserName(args));
 
         int totalTreasureValue = inv.TotalTreasureWorth;
         inv.Treasures.Clear();
         inv.CrunchNumbers();
 
-        SetPlayerInventory(inv);
-        AwardPlayerAmount(GetCurrentUserName(), totalTreasureValue);
-        SendTwitchReply(string.Format("You sold all your treasures for {0} {1}!", totalTreasureValue, ConfigService.CURRENCY_NAME));
+        SetPlayerInventory(userService.GetCurrentUserName(args), inv);
+        walletService.AwardPlayerAmount(userService.GetCurrentUserName(args), totalTreasureValue);
+        msgService.SendTwitchReply(string.Format("You sold all your treasures for {0} {1}!", totalTreasureValue, ConfigService.CURRENCY_NAME));
     }
 
 
@@ -238,16 +256,17 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool SetUpShop()
     {
+        VarService varService = new VarService(CPH);
         Random rand = new Random();
         int roll = rand.Next(1, 2);
 
         Shop<Equipment> equipmentShop = new Shop<Equipment>();
         equipmentShop.RestockShop();
-        SetGlobalVariable<Shop<Equipment>>(ConfigService.EQUIPMENT_SHOP_VAR_NAME, equipmentShop);
+        varService.SetGlobalVariable<Shop<Equipment>>(ConfigService.EQUIPMENT_SHOP_VAR_NAME, equipmentShop);
 
         Shop<Tool> toolShop = new Shop<Tool>();
         toolShop.RestockShop();
-        SetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME, toolShop);
+        varService.SetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME, toolShop);
 
         return true;
 
@@ -257,13 +276,13 @@ public class CPHInline : CPHInlineBase
     ///     Timer-Method to restock shops
     /// </summary>
     /// <returns></returns>
-    //public bool RestockShop()
-    //{
-    //    SetUpShop();
-    //    string announcement = "The Shop has been restocked! Check it with !shop";
-    //    AnnounceToAudience(announcement);
-    //    return true;
-    //}
+    public bool RestockShop()
+    {
+        SetUpShop();
+        string announcement = "The Shop has been restocked! Check it with !shop";
+        AnnounceToAudience(announcement);
+        return true;
+    }
 
 
     /// <summary>
@@ -272,7 +291,8 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool DisplayShopStock()
     {
-        Shop<Tool> toolShop = GetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME);
+        VarService varService = new VarService(CPH);
+        Shop<Tool> toolShop = varService.GetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME);
         CPH.LogInfo("Shop: " + toolShop);
 
         String items = "";
@@ -295,14 +315,10 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool Abdicate()
     {
-        CPH.LogDebug("1");
         if (CurrentUserIsKing())
         {
-            CPH.LogDebug("5");
             string currentKing = GetKingUsername();
-            CPH.LogDebug("6");
             CPH.TwitchAnnounce(string.Format("{0} has abdicated voluntarily, or by force of the council (other VIPs), a new King shall be crowned!", currentKing), true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
-            CPH.LogDebug("7");
             CrownRandomChatter();
         }
         return true;
@@ -317,7 +333,8 @@ public class CPHInline : CPHInlineBase
         CPH.TwitchAnnounce("Due to absence of a King, a random Chatter shall now be crowned!", true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
         if (CPH.TryGetArg("foundUserName0", out string userName))
         {
-            userName = SanitizeUsername(userName);
+            UserService userService = new UserService(CPH);
+            userName = userService.SanitizeUsername(userName);
             TwitchUserInfo randomChatterInfo = CPH.TwitchGetUserInfoByLogin(userName);
             CrownChatter(randomChatterInfo.UserName, false);
         }
@@ -343,6 +360,7 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool InitiateDuel()
     {
+        UserService userService = new UserService(CPH);
         string target = GetCommandArgument();
 
         Random rand = new Random();
@@ -351,12 +369,12 @@ public class CPHInline : CPHInlineBase
         if (roll > 50)
         {
             DuelWin();
-            CPH.SendMessage(string.Format("User {0} has won the duel against {1} and has been rewarded {2} {3}!", GetCurrentUserName(), target, ConfigService.DUEL_BONUS_AMOUNT, ConfigService.CURRENCY_NAME), true, true);
+            CPH.SendMessage(string.Format("User {0} has won the duel against {1} and has been rewarded {2} {3}!", userService.GetCurrentUserName(args), target, ConfigService.DUEL_BONUS_AMOUNT, ConfigService.CURRENCY_NAME), true, true);
         }
         else
         {
             DuelFail();
-            CPH.SendMessage(string.Format("User {0} has lost the duel against {1} and has to pay {2} {3} in hospital bills!", GetCurrentUserName(), target, ConfigService.DUEL_BONUS_AMOUNT, ConfigService.CURRENCY_NAME), true, true);
+            CPH.SendMessage(string.Format("User {0} has lost the duel against {1} and has to pay {2} {3} in hospital bills!", userService.GetCurrentUserName(args), target, ConfigService.DUEL_BONUS_AMOUNT, ConfigService.CURRENCY_NAME), true, true);
         }
 
         return true;
@@ -369,52 +387,16 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool GiftMoney()
     {
-        string grantor = GetCurrentUserName();
-        string grantee = GetCommandArgumentAtPosition(0);
-        string sumArg = GetCommandArgumentAtPosition(1);
-        int sum = 0;
-        if (int.TryParse(sumArg, out sum))
-        {
-            if (sum < 0)
-            {
-                return true;
-            }
-            if (UserHasEnoughMoneyToGift(grantor, sum))
-            {
-                CPH.SendMessage(string.Format("{0} decided to gift {1} the sum of {2} {3}! {1} don't forget to say thank you!", grantor, grantee, sum, ConfigService.CURRENCY_NAME));
-                GiveMoneyFromTo(grantor, grantee, sum);
-            }
-            else
-            {
-                SendTwitchReply("You don't have enough money for this transaction! You'd go into debt and debt is bad!");
-            }
-        }
-
+        UserService userService = new UserService(CPH);
+        WalletService walletService = new WalletService(CPH);
+        walletService.GiftMoney(userService.GetCurrentUserName(args), GetCommandArgumentAtPosition(0), GetCommandArgumentAtPosition(1));
+        
         return true;
     }
 
-    /// <summary>
-    ///     Internal Method to determine if a User has enough money in their account to gift a specific sum to someone else
-    /// </summary>
-    /// <param name="username">User to check</param>
-    /// <param name="sum">Sum that should be checked for</param>
-    /// <returns></returns>
-    private bool UserHasEnoughMoneyToGift(string username, int sum)
-    {
-        return (sum < GetCurrentUserVariable<int>(ConfigService.PLAYER_MONEY_VAR_NAME));
-    }
+    
 
-    /// <summary>
-    ///     Logic-Function to give a player Money Uses the Fine and Award functions to handle the Transaction
-    /// </summary>
-    /// <param name="grantor">Username from the user that gives the money away</param>
-    /// <param name="grantee">Username of the user that receives the money</param>
-    /// <param name="sum">Sum that is gifted</param>
-    private void GiveMoneyFromTo(string grantor, string grantee, int sum)
-    {
-        FinePlayerAmount(grantor, sum);
-        AwardPlayerAmount(grantee, sum);
-    }
+    
 
 
     /// <summary>
@@ -425,18 +407,18 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool CrownChatter(string username, bool suppressMessage)
     {
-        CPH.LogDebug("12");
-        SetGlobalVariable(ConfigService.KINGS_NAME_VAR_NAME, username);
-        CPH.LogDebug("13");
-        string currentKing = GetKingUsername();
-        CPH.LogDebug("14");
+        VarService varService = new VarService(CPH);
+
+        varService.SetGlobalVariable(ConfigService.KINGS_NAME_VAR_NAME, username);        
+        string currentKing = GetKingUsername();        
         if (!suppressMessage)
         {
             CPH.TwitchAnnounce(string.Format("Chatter {0} has been crowned King! They have been rewarded VIP, 10.000 {1}, and can be challenged for their crown in 5 minutes with the !regicide command!", 
                 currentKing, ConfigService.CURRENCY_NAME), true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
         }
         CPH.TwitchAddVip(currentKing);
-        AwardPlayerAmount(currentKing, ConfigService.CROWNING_BONUS_AMOUNT);
+        WalletService walletService = new WalletService(CPH);
+        walletService.AwardPlayerAmount(currentKing, ConfigService.CROWNING_BONUS_AMOUNT);
         SetKingsProtection(true);
 
         return true;
@@ -448,11 +430,15 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool Account()
     {
-        string user = GetCurrentUserName();
+        MessageService msgService = new MessageService(CPH);
+        VarService varService = new VarService(CPH);
+        UserService userService = new UserService(CPH);
+
+        string user = userService.GetCurrentUserName(args);
         CPH.LogDebug("Prepare for boom");
-        int balance = GetUserVariable<int>(user, ConfigService.PLAYER_MONEY_VAR_NAME);
+        int balance = varService.GetUserVariable<int>(user, ConfigService.PLAYER_MONEY_VAR_NAME);
         CPH.LogDebug("Current Balance of Player: " + user + " is " + balance);
-        SendTwitchReply(string.Format("Hey {0}, your current {1} Balance is: {2}!", user, ConfigService.CURRENCY_NAME, balance));
+        msgService.SendTwitchReply(string.Format("Hey {0}, your current {1} Balance is: {2}!", user, ConfigService.CURRENCY_NAME, balance));
         return true;
     }
 
@@ -462,9 +448,11 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool Coffers()
     {
+        UserService userService = new UserService(CPH);
+        MessageService msgService = new MessageService(CPH);
         string currentKing = GetKingUsername();
         int balance = CPH.GetTwitchUserVar<int>(currentKing, ConfigService.PLAYER_MONEY_VAR_NAME, true);
-        SendTwitchReply(string.Format("Hey {0}, King {1} currently has {2} {3}!", GetCurrentUserName(), currentKing, balance, ConfigService.CURRENCY_NAME));
+        msgService.SendTwitchReply(string.Format("Hey {0}, King {1} currently has {2} {3}!", userService.GetCurrentUserName(args), currentKing, balance, ConfigService.CURRENCY_NAME));
 
         return true;
     }
@@ -475,14 +463,15 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool GetKing()
     {
+        MessageService msgService = new MessageService(CPH);
         if (!string.IsNullOrEmpty(GetKingUsername()))
-        {
-            SendTwitchReply(string.Format("The user {0} is currently King! You can challenge them with the !regicide command for VIP Status!", GetKingUsername()));
+        {            
+            msgService.SendTwitchReply(string.Format("The user {0} is currently King! You can challenge them with the !regicide command for VIP Status!", GetKingUsername()));
 
         }
         else
         {
-            SendTwitchReply("There is currently no King crowned! Random Chatter will be crowned now!");
+            msgService.SendTwitchReply("There is currently no King crowned! Random Chatter will be crowned now!");
             CrownRandomChatter();
         }
         return true;
@@ -495,18 +484,20 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool ChallengeKing()
     {
+        UserService userService = new UserService(CPH);
+
         Random rand = new Random();
         int roll = rand.Next(1, 100);
         // Equals a success and initiates a regicide
         if (roll > 50)
         {
-            CPH.SendMessage(string.Format("User {0} murdered King {1} in cold blood and will be crowned King!", GetCurrentUserName(), GetKingUsername()), true, true);
+            CPH.SendMessage(string.Format("User {0} murdered King {1} in cold blood and will be crowned King!", userService.GetCurrentUserName(args), GetKingUsername()), true, true);
             RegicideSuccess();
         }
         // Equals a failure and will get you fined and possibly jailed later on (timeout?)
         else
         {
-            CPH.SendMessage(string.Format("User {0} failed in their attempt to murder King {1}!", GetCurrentUserName(), GetKingUsername()), true, true);
+            CPH.SendMessage(string.Format("User {0} failed in their attempt to murder King {1}!", userService.GetCurrentUserName(args), GetKingUsername()), true, true);
             RegicideFailure();
         }
         return true;
@@ -517,8 +508,11 @@ public class CPHInline : CPHInlineBase
     /// </summary>
     private void RegicideFailure()
     {
-        FinePlayerAmount(GetCurrentUserName(), ConfigService.REGICIDE_REWARD_AMOUNT);
-        JailUser(GetCurrentUserName(), "Attempted Murder of the King!");        
+        UserService userService = new UserService(CPH);
+        WalletService walletService = new WalletService(CPH);
+
+        walletService.FinePlayerAmount(userService.GetCurrentUserName(args), ConfigService.REGICIDE_REWARD_AMOUNT);
+        JailUser(userService.GetCurrentUserName(args), "Attempted Murder of the King!");        
     }
     /// <summary>
     ///     Handles a regicide success and rewards the player. 
@@ -528,10 +522,12 @@ public class CPHInline : CPHInlineBase
     /// </summary>
     private void RegicideSuccess()
     {
-        FinePlayerAmount(GetKingUsername(), ConfigService.REGICIDE_FAILURE_AMOUNT);
-        AwardPlayerAmount(GetCurrentUserName(), ConfigService.REGICIDE_FAILURE_AMOUNT);
+        WalletService walletService = new WalletService(CPH);
+        UserService userService = new UserService(CPH);
+        walletService.FinePlayerAmount(GetKingUsername(), ConfigService.REGICIDE_FAILURE_AMOUNT);
+        walletService.AwardPlayerAmount(userService.GetCurrentUserName(args), ConfigService.REGICIDE_FAILURE_AMOUNT);
         KillKing();
-        CrownChatter(GetCurrentUserName(), false);
+        CrownChatter(userService.GetCurrentUserName(args), false);
     }
 
     /// <summary>
@@ -539,7 +535,9 @@ public class CPHInline : CPHInlineBase
     /// </summary>
     private void DuelWin()
     {
-        AwardPlayerAmount(GetCurrentUserName(), ConfigService.DUEL_BONUS_AMOUNT);
+        UserService userService = new UserService(CPH);
+        WalletService walletService = new WalletService(CPH);
+        walletService.AwardPlayerAmount(userService.GetCurrentUserName(args), ConfigService.DUEL_BONUS_AMOUNT);
     }
 
     /// <summary>
@@ -547,7 +545,9 @@ public class CPHInline : CPHInlineBase
     /// </summary>
     private void DuelFail()
     {
-        FinePlayerAmount(GetCurrentUserName(), ConfigService.DUEL_BONUS_AMOUNT);
+        UserService userService = new UserService(CPH);
+        WalletService walletService = new WalletService(CPH);
+        walletService.FinePlayerAmount(userService.GetCurrentUserName(args), ConfigService.DUEL_BONUS_AMOUNT);
     }
 
     /// <summary>
@@ -578,7 +578,8 @@ public class CPHInline : CPHInlineBase
                 }
                 else
                 {
-                    SendTwitchReply("Can't parse your tax-rate. Make sure it is a number, like this: !taxrate 20");
+                    MessageService msgService = new MessageService(CPH);
+                    msgService.SendTwitchReply("Can't parse your tax-rate. Make sure it is a number, like this: !taxrate 20");
                 }
             }
             else
@@ -602,7 +603,8 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     private bool CheckKingsProtection()
     {
-        return GetGlobalVariable<bool>(ConfigService.KINGS_PROTECTION_VAR_NAME);
+        VarService varService = new VarService(CPH);
+        return varService.GetGlobalVariable<bool>(ConfigService.KINGS_PROTECTION_VAR_NAME);
     }
     /// <summary>
     ///     Internal Method to set the Kings Protection Status
@@ -610,7 +612,8 @@ public class CPHInline : CPHInlineBase
     /// <param name="isProtected"></param>
     private void SetKingsProtection(bool isProtected)
     {
-        SetGlobalVariable(ConfigService.KINGS_PROTECTION_VAR_NAME, DateTime.Now.AddMinutes(5d));
+        VarService varService = new VarService(CPH);
+        varService.SetGlobalVariable(ConfigService.KINGS_PROTECTION_VAR_NAME, DateTime.Now.AddMinutes(5d));
     }
 
     /// <summary>
@@ -618,7 +621,8 @@ public class CPHInline : CPHInlineBase
     /// </summary>
     private void GetTax()
     {
-        SendTwitchReply(string.Format("The current Tax-Rate is {0}%", Math.Floor(GetTaxRate()).ToString()));
+        MessageService msgService = new MessageService(CPH);
+        msgService.SendTwitchReply(string.Format("The current Tax-Rate is {0}%", Math.Floor(GetTaxRate()).ToString()));
     }
 
     /// <summary>
@@ -628,7 +632,9 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     private bool SetTax(float newRate)
     {
-        float oldRate = GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
+        VarService varService = new VarService(CPH);
+
+        float oldRate = varService.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
         // In case the rate has never been changed yet, this might throw an error, so we set the default just to be sure     
         if (oldRate == 0)
         {
@@ -638,7 +644,7 @@ public class CPHInline : CPHInlineBase
         AnnounceToAudience(announcement);
         
 
-        SetGlobalVariable(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, newRate);
+        varService.SetGlobalVariable(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, newRate);
         return true;
     }
 
@@ -648,18 +654,21 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool Mine()
     {
-        // Inventory inventory = getPlayerInventory(getCurrentUserName());
+        
+        UserService userService = new UserService(CPH);
+        MessageService msgService = new MessageService(CPH);
+        // Inventory inventory = getPlayerInventory(userService.GetCurrentUserName(args));
         // Since the king doesn't mine, we gotta check it here
         if (CurrentUserIsKing())
         {
-            SendTwitchReply("The King does not mine!");
+            msgService.SendTwitchReply("The King does not mine!");
         }
         else
         {
             Random randGen = new Random();
 
             // Get Players inventory, it holds some important values like roll-boosts and injury-reduction
-            Inventory inv = GetPlayerInventory(GetCurrentUserName());
+            Inventory inv = GetPlayerInventory(userService.GetCurrentUserName(args));
 
             // Roll for the Haul-Amount
             int haul = randGen.Next(ConfigService.MINING_MINIMUM_REWARD_AMOUNT, ConfigService.MINING_MAXIMUM_REWARD_AMOUNT);
@@ -670,10 +679,10 @@ public class CPHInline : CPHInlineBase
                 TreasureService gen = new TreasureService();
                 Item item = gen.GenerateTreasure();
                 inv.AddItem(item);
-                SetPlayerInventory(inv);
+                SetPlayerInventory(userService.GetCurrentUserName(args), inv);
 
-                string announcement = string.Format("User {0} just found a {1} {2}! Congratulations on your find!!", GetCurrentUserName(), item.Tier.ToString(), item.Name);
-                SendTwitchReply(string.Format("You found a hidden treasure! You found a {0} {1} which is worth {2} {3} (tax-free)!", item.Tier.ToString(), item.Name, item.Value, ConfigService.CURRENCY_NAME));
+                string announcement = string.Format("User {0} just found a {1} {2}! Congratulations on your find!!", userService.GetCurrentUserName(args), item.Tier.ToString(), item.Name);
+                msgService.SendTwitchReply(string.Format("You found a hidden treasure! You found a {0} {1} which is worth {2} {3} (tax-free)!", item.Tier.ToString(), item.Name, item.Value, ConfigService.CURRENCY_NAME));
                 AnnounceToAudience(announcement);
             }
 
@@ -688,10 +697,10 @@ public class CPHInline : CPHInlineBase
             else
             {
                 int paidTaxes = PayTaxes(haul);
-                int paidSalary = PayMiner(GetCurrentUserName(), haul);
+                int paidSalary = PayMiner(userService.GetCurrentUserName(args), haul);
 
-                SendTwitchReply(string.Format("@{0} you mined {1} {2}! You paid {3} {2} in Taxes and were rewarded the remaining {4} {2}!",
-                        GetCurrentUserName(), haul, ConfigService.CURRENCY_NAME, paidTaxes, paidSalary));
+                msgService.SendTwitchReply(string.Format("@{0} you mined {1} {2}! You paid {3} {2} in Taxes and were rewarded the remaining {4} {2}!",
+                        userService.GetCurrentUserName(args), haul, ConfigService.CURRENCY_NAME, paidTaxes, paidSalary));
             }
         }
 
@@ -705,8 +714,9 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool ListDurability()
     {
+        UserService userService = new UserService(CPH);
         string messageString = "";
-        Inventory inv = GetPlayerInventory(GetCurrentUserName());
+        Inventory inv = GetPlayerInventory(userService.GetCurrentUserName(args));
         foreach (Item item in inv.EquippedItems)
         {
             if (item.IsEquipment)
@@ -714,7 +724,9 @@ public class CPHInline : CPHInlineBase
                 Tool tool = (Tool)item;
 
                 messageString += string.Format("{0} has {1} Durability left, ", tool.Name, tool.Usages);
-                SendTwitchReply(messageString);
+                
+                MessageService msgService = new MessageService(CPH);
+                msgService.SendTwitchReply(messageString);
             }
         }
         return true;
@@ -731,8 +743,7 @@ public class CPHInline : CPHInlineBase
     {
         Inventory inventory = GetPlayerInventory(username);
         inventory.AddItem(item);
-        SetPlayerInventory(inventory);
-
+        SetPlayerInventory(username, inventory);
     }
 
     /// <summary>
@@ -742,11 +753,12 @@ public class CPHInline : CPHInlineBase
     /// <returns>Inventory of the Player</returns>
     private Inventory GetPlayerInventory(string user)
     {
-        Inventory inv = GetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME);
+        VarService varService = new VarService(CPH);
+        Inventory inv = varService.GetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME);
         if (inv == null)
         {
             inv = new Inventory();
-            SetCurrentUserVariable<Inventory>(ConfigService.INVENTORY_VAR_NAME);
+            varService.SetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME, inv);
         }
         return inv;
     }
@@ -755,9 +767,10 @@ public class CPHInline : CPHInlineBase
     ///     Internal Method to set a players Inventory
     /// </summary>
     /// <param name="inv"></param>
-    private void SetPlayerInventory(Inventory inv)
+    private void SetPlayerInventory(string playerName, Inventory inv)
     {
-        SetUserVariable(ConfigService.INVENTORY_VAR_NAME, inv);
+        VarService varService = new VarService(CPH);
+        varService.SetUserVariable(playerName, ConfigService.INVENTORY_VAR_NAME, inv);
     }
 
 
@@ -768,16 +781,19 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool ResetAccountOfChatter()
     {
+        MessageService msgService = new MessageService(CPH);
+        VarService varService = new VarService(CPH);
+
         string username = GetTwitchUserFromCommandCall().UserName;
 
         CPH.LogInfo("Resetting Account of " + username);
         Inventory inventory = new Inventory();
         CPH.LogInfo("Resetting inventory of " + username);
-        SetUserVariable(ConfigService.INVENTORY_VAR_NAME, inventory);
+        varService.SetUserVariable(username, ConfigService.INVENTORY_VAR_NAME, inventory);
 
         CPH.LogInfo("Resetting wallet of " + username);
-        CPH.SetTwitchUserVar(username, ConfigService.PLAYER_MONEY_VAR_NAME, 0, true);
-        SendTwitchReply(string.Format("@{0} your points and inventory were reset!", username));
+        varService.SetUserVariable(username, ConfigService.PLAYER_MONEY_VAR_NAME, 0);
+        msgService.SendTwitchReply(string.Format("@{0} your points and inventory were reset!", username));
         return true;
     }
 
@@ -789,8 +805,8 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     private bool CurrentUserIsKing()
     {
-        CPH.LogDebug("2");
-        return GetCurrentUserName().ToLower().Equals(GetKingUsername().ToLower());
+        UserService userService = new UserService(CPH);        
+        return userService.GetCurrentUserName(args).ToLower().Equals(GetKingUsername().ToLower());
     }
 
     /// <summary>
@@ -799,8 +815,9 @@ public class CPHInline : CPHInlineBase
     /// <returns>TwitchUserInfo Object for the redeeming user</returns>
     public TwitchUserInfo GetTwitchUserFromCommandCall()
     {
+        UserService userService = new UserService(CPH);
         string user = GetCommandArgument();
-        user = SanitizeUsername(user);
+        user = userService.SanitizeUsername(user);
         if (!string.IsNullOrEmpty(user))
         {
             TwitchUserInfo userInfo = CPH.TwitchGetUserInfoByLogin(user);
@@ -843,26 +860,21 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool MiningAccident()
     {
-        Random randomGen = new Random();
-        int fine = randomGen.Next(ConfigService.MINING_MINIMUM_FINE_AMOUNT, ConfigService.MINING_MAXIMUM_FINE_AMOUNT);
-        FinePlayerAmount(GetCurrentUserName(), fine);
+        UserService userService = new UserService(CPH);
+        WalletService walletService = new WalletService(CPH);
+        MessageService msgService = new MessageService(CPH);
 
-        CallTTS(VoiceTypes.REGULAR, string.Format("Weeeee you weeeee you, here comes the ambulance to rescue {0}!", GetCurrentUserName()), false);
-        SendTwitchReply(string.Format("Oh no! You had a terrible accident while mining! ({0}% chance). The treatment cost you {1} {2}", ConfigService.MINING_INITIAL_ACCIDENT_RATE, fine, ConfigService.CURRENCY_NAME));
+        Random randomGen = new Random();
+
+        int fine = randomGen.Next(ConfigService.MINING_MINIMUM_FINE_AMOUNT, ConfigService.MINING_MAXIMUM_FINE_AMOUNT);
+        walletService.FinePlayerAmount(userService.GetCurrentUserName(args), fine);
+
+        CallTTS(VoiceTypes.REGULAR, string.Format("Weeeee you weeeee you, here comes the ambulance to rescue {0}!", userService.GetCurrentUserName(args)), false);
+        msgService.SendTwitchReply(string.Format("Oh no! You had a terrible accident while mining! ({0}% chance). The treatment cost you {1} {2}", ConfigService.MINING_INITIAL_ACCIDENT_RATE, fine, ConfigService.CURRENCY_NAME));
         return true;
     }
 
-    /// <summary>
-    ///     Gets the current users name from the Args
-    /// </summary>
-    /// <returns></returns>
-    private string GetCurrentUserName()
-    {
-        if (args["user"] != null && args["user"].GetType() == typeof(string)) { 
-            return args["user"].ToString();
-        }
-        return "";
-    }
+
 
     /// <summary>
     ///     Abstracted Method to calculate a miners haul after-tax. 
@@ -873,10 +885,11 @@ public class CPHInline : CPHInlineBase
     /// <returns>Integer that represents the salary after Taxes</returns>
     private int PayMiner(string username, int taxableHaul)
     {
+        WalletService walletService = new WalletService(CPH);
         float taxRate = GetTaxRate();
         int taxes = (int)Math.Floor(taxableHaul * (taxRate / 100));
         int paidSalary = taxableHaul - taxes;
-        AwardPlayerAmount(username, paidSalary);
+        walletService.AwardPlayerAmount(username, paidSalary);
 
         return paidSalary;
     }
@@ -888,14 +901,16 @@ public class CPHInline : CPHInlineBase
     /// <returns>Current Tax-Rate as Float</returns>
     private float GetTaxRate()
     {
+        VarService varService = new VarService(CPH);
+
         float taxRate;
-        if (GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME) == 0)
+        if (varService.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME) == 0)
         {
             taxRate = ConfigService.INITIAL_TAX_RATE;
         }
         else
         {
-            taxRate = GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
+            taxRate = varService.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
         }
 
         return taxRate;
@@ -909,24 +924,14 @@ public class CPHInline : CPHInlineBase
     /// <returns>Integer that represents the paid Tax-Amount</returns>
     private int PayTaxes(int taxableSum)
     {
+        WalletService walletService = new WalletService(CPH);
         float taxRate = GetTaxRate();
         int taxes = (int)Math.Floor(taxableSum * (taxRate / 100));
-        AwardPlayerAmount(GetKingUsername(), taxes);
+        walletService.AwardPlayerAmount(GetKingUsername(), taxes);
 
         return taxes;
     }
 
-    /// <summary>
-    ///     Internal Method to send a Twitch Message to Chat. Reduces redundant code and increases resilience towards API-Changes
-    /// </summary>
-    /// <param name="message">String that represents the Message to be sent to chat</param>
-    private void SendTwitchReply(string message)
-    {
-        if (CPH.TryGetArg("msgId", out string messageId))
-        {
-            CPH.TwitchReplyToMessage(message, messageId, true, true);
-        }
-    }
 
     /// <summary>
     ///     Abstracted Method to get the Username of the current King. 
@@ -935,60 +940,9 @@ public class CPHInline : CPHInlineBase
     /// <returns>String that represents Name of the current King</returns>
     private string GetKingUsername()
     {
-        CPH.LogDebug("4");
-        CPH.LogDebug("444");
-        CPH.LogDebug("44444");
-        CPH.LogDebug("KINGS_NAME_VAR_NAME: " + ConfigService.KINGS_NAME_VAR_NAME);
-        return GetGlobalVariable<string>(ConfigService.KINGS_NAME_VAR_NAME);
+        VarService varService = new VarService(CPH);
+        return varService.GetGlobalVariable<string>(ConfigService.KINGS_NAME_VAR_NAME);
     }
-
-    /// <summary>
-    ///     Abstracted Method to increase a players walletbalance. 
-    ///     Reduces redundant code and increases resilience towards API-Changes
-    /// </summary>
-    /// <param name="username">String that represents the User to award</param>
-    /// <param name="amount">Integer that represents the award amount</param>
-    private void AwardPlayerAmount(string username, int amount)
-    {
-        CPH.LogInfo("Username :" + username);
-        username = SanitizeUsername(username);
-        CPH.LogInfo("Sanitized Username :" + username);
-        int currentBalance = CPH.GetTwitchUserVar<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME, true);
-        CPH.LogInfo("Current Balance :" + currentBalance);
-        currentBalance += amount;
-        CPH.LogInfo("Setting Walletbalance to :" + currentBalance);
-        CPH.SetTwitchUserVar(username, ConfigService.PLAYER_MONEY_VAR_NAME, currentBalance, true);
-    }
-
-    /// <summary>
-    ///     Users may use @username for easier identification of users in chat. 
-    ///     But most CPH Commands don't like that, so we need to sanitize the username and remove the @-Character
-    /// </summary>
-    /// <param name="username">Username to sanitize</param>
-    /// <returns>A sanitized String of a username</returns>
-    private string SanitizeUsername(string username)
-    {
-        if (username.StartsWith("@"))
-            username = username.Substring(1);
-
-        TwitchUserInfo userInfo = CPH.TwitchGetUserInfoByLogin(username);
-        return userInfo.UserName;
-    }
-
-    /// <summary>
-    ///     Abstracted Method to reduce a players walletbalance. 
-    ///     Reduces redundant code and increases resilience towards API-Changes
-    /// </summary>
-    /// <param name="username">Name of the user to fine</param>
-    /// <param name="amount">Amount to be fined</param>
-    private void FinePlayerAmount(string username, int amount)
-    {
-        int currentBalance = CPH.GetTwitchUserVar<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME, true);
-        currentBalance -= amount;
-        CPH.SetTwitchUserVar(username, ConfigService.PLAYER_MONEY_VAR_NAME, currentBalance, true);
-    }
-
-    
 
     /// <summary>
     ///     Shows the User their treasures in a message
@@ -996,7 +950,8 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool ListPlayersTreasures()
     {
-        Inventory inv = GetPlayerInventory(GetCurrentUserName());
+        UserService userService = new UserService(CPH);
+        Inventory inv = GetPlayerInventory(userService.GetCurrentUserName(args));
 
         if (inv.Items.Count > 0)
         {
@@ -1006,7 +961,8 @@ public class CPHInline : CPHInlineBase
             {
                 items += string.Format("{0}({1})", item.Name, item.Value) + ", ";
             });
-            SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, ConfigService.CURRENCY_NAME));
+            MessageService msgService = new MessageService(CPH);
+            msgService.SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, ConfigService.CURRENCY_NAME));
         }
         else
         {
@@ -1021,7 +977,8 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool ListPlayersEquipment()
     {
-        Inventory inv = GetPlayerInventory(GetCurrentUserName());
+        UserService userService = new UserService(CPH);
+        Inventory inv = GetPlayerInventory(userService.GetCurrentUserName(args));
 
         if (inv.EquippedItems.Count > 0)
         {
@@ -1039,7 +996,8 @@ public class CPHInline : CPHInlineBase
                         break;
                 }
             });
-            SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalTreasureWorth, ConfigService.CURRENCY_NAME));
+            MessageService msgService = new MessageService(CPH);
+            msgService.SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalTreasureWorth, ConfigService.CURRENCY_NAME));
         }
         else
         {
@@ -1054,7 +1012,8 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool ListPlayersInventory()
     {
-        Inventory inv = GetPlayerInventory(GetCurrentUserName());
+        UserService userService = new UserService(CPH);
+        Inventory inv = GetPlayerInventory(userService.GetCurrentUserName(args));
 
         if (inv.Items.Count > 0)
         {
@@ -1076,7 +1035,8 @@ public class CPHInline : CPHInlineBase
 
             itemMessages.ForEach(message =>
             {
-                SendTwitchReply(message);
+                MessageService msgService = new MessageService(CPH);
+                msgService.SendTwitchReply(message);
             });
         }
         else
@@ -1108,7 +1068,8 @@ public class CPHInline : CPHInlineBase
         }
         else
         {
-            SendTwitchReply("Only Royalty may issue decrees, peasant!");
+            MessageService msgService = new MessageService(CPH);
+            msgService.SendTwitchReply("Only Royalty may issue decrees, peasant!");
         }
 
         return true;
@@ -1120,15 +1081,18 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool PaidAnnouncement()
     {
-        if (UserHasEnoughMoneyToGift(GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE))
-        {
-            String announcement = string.Format("User {0} paid {1} {2} for the following announcement: {3}", GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE, ConfigService.CURRENCY_NAME, GetCommandArgument());
-            FinePlayerAmount(GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE);
+        UserService userService = new UserService(CPH);
+        WalletService walletService = new WalletService(CPH);
+        MessageService msgService = new MessageService(CPH);
+        if (walletService.UserHasEnoughMoneyToGift(userService.GetCurrentUserName(args), ConfigService.PAID_ANNOUNCEMENT_PRICE))
+        {            
+            String announcement = string.Format("User {0} paid {1} {2} for the following announcement: {3}", userService.GetCurrentUserName(args), ConfigService.PAID_ANNOUNCEMENT_PRICE, ConfigService.CURRENCY_NAME, GetCommandArgument());
+            walletService.FinePlayerAmount(userService.GetCurrentUserName(args), ConfigService.PAID_ANNOUNCEMENT_PRICE);
             AnnounceToAudience(announcement);
         }
         else
         {
-            SendTwitchReply(string.Format("Announcements cost {0} {1}, which you can't afford right now!", ConfigService.PAID_ANNOUNCEMENT_PRICE, ConfigService.CURRENCY_SYMBOL));
+            msgService.SendTwitchReply(string.Format("Announcements cost {0} {1}, which you can't afford right now!", ConfigService.PAID_ANNOUNCEMENT_PRICE, ConfigService.CURRENCY_SYMBOL));
         }
 
         return true;
@@ -1140,7 +1104,8 @@ public class CPHInline : CPHInlineBase
     /// <param name="announcement">String that represents the announcement text</param>
     private void AnnounceToAudience(string announcement)
     {
-        CPH.TwitchAnnounce(announcement, true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, false);
+        //CPH.SendMessage(announcement, true, true);
+        //CPH.TwitchAnnounce(announcement, true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, false);
         CallTTS(VoiceTypes.KING, announcement, false);
     }
 
@@ -1154,16 +1119,19 @@ public class CPHInline : CPHInlineBase
     {
         if(ConfigService.ENABLE_TTS)
         {
-            CPH.TtsSpeak(ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[voice], announcement, true);
+            CPH.TtsSpeak(ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[voice], announcement, true);            
         } 
         else
         {
             // Notify User of TTS not being enabled
-            SendTwitchReply("TTS is currently not enabled!");
+            MessageService msgService = new MessageService(CPH);
+            UserService userService = new UserService(CPH);
+            msgService.SendTwitchReply("TTS is currently not enabled!");
             // If it was a paid announcement, refund the cost
             if(isPaidAnnouncement)
             {
-                AwardPlayerAmount(GetCurrentUserName(), ConfigService.PAID_ANNOUNCEMENT_PRICE);
+                WalletService walletService = new WalletService(CPH); 
+                walletService.AwardPlayerAmount(userService.GetCurrentUserName(args), ConfigService.PAID_ANNOUNCEMENT_PRICE);
             }
         }
     }
@@ -1179,79 +1147,12 @@ public class CPHInline : CPHInlineBase
 
         if (amount > 0)
         {
-            AwardPlayerAmount(GetCommandArgumentAtPosition(0), amount);
+            WalletService walletService = new WalletService(CPH);
+            walletService.AwardPlayerAmount(GetCommandArgumentAtPosition(0), amount);
         }
         return true;
     }
 
 
-    /// <summary>
-    ///     Abstraction to set a User-Scope Variable for the redeeming user.
-    ///     Presets persistence from Settings
-    /// </summary>
-    /// <typeparam name="T">Can be any type that is serializable</typeparam>
-    /// <param name="name">Name of the var to set</param>
-    private void SetCurrentUserVariable<T>(string name)
-    {
-        SetUserVariable(GetCurrentUserName(), name);
-    }
-
-    /// <summary>
-    ///     Abstraction for SetUserVar for better persistence-control. 
-    ///     Presets persistence from Settings
-    /// </summary>
-    /// <typeparam name="T">Can be anything that is serializable</typeparam>
-    /// <param name="name">Name of the var to set the value for</param>
-    /// <param name="value">New value to be set</param>
-    private void SetUserVariable<T>(string name, T value)
-    {
-        CPH.SetTwitchUserVar(GetCurrentUserName(), name, value, ConfigService.IS_GAME_PERSISTENT);
-    }
-
-    /// <summary>
-    ///     Abstraction for GetGlobalVar for better persistence-control. 
-    ///     Presets persistence from Settings
-    /// </summary>
-    /// <typeparam name="T">Can be anything that is serializable</typeparam>
-    /// <param name="name">Name of the value to pull from the Globals</param>
-    /// <returns>Deserialized Global-Scope Variable</returns>
-    private T GetGlobalVariable<T>(string name)
-    {
-        return CPH.GetGlobalVar<T>(name, ConfigService.IS_GAME_PERSISTENT);
-    }
-
-    /// <summary>
-    ///     Abstraction for SetGlobalVar for better persistence-control. 
-    ///     Presets persistence from Settings
-    /// </summary>
-    /// <typeparam name="T">Can be anything that is serializable</typeparam>
-    /// <param name="name">Name of the Global-Var to set</param>
-    /// <param name="value">New Value of the Global-Var</param>
-    private void SetGlobalVariable<T>(string name, T value)
-    {
-        CPH.SetGlobalVar(name, value, ConfigService.IS_GAME_PERSISTENT);
-    }
-
-    /// <summary>
-    ///     Abstraction for GetUserVar for better persistence-control. Presets persistence from Settings
-    /// </summary>
-    /// <typeparam name="T">Can be anything that is serializable</typeparam>
-    /// <param name="username">Name of the user to load the var from</param>
-    /// <param name="varname">Name of the var to load</param>
-    /// <returns>Deserialized User-Scope Variable</returns>
-    private T GetUserVariable<T>(string username, string varname)
-    {
-        return CPH.GetTwitchUserVar<T>(username, varname, ConfigService.IS_GAME_PERSISTENT);
-    }
-
-    /// <summary>
-    ///     Abstraction for GetUserVar for better persistence-control. Presets persistence from Settings
-    /// </summary>
-    /// <typeparam name="T">can be anything that is serializable</typeparam>
-    /// <param name="name">Name of the variable to load</param>
-    /// <returns>Deserialized User-Scope Variable</returns>
-    private T GetCurrentUserVariable<T>(string name)
-    {
-        return GetUserVariable<T>(GetCurrentUserName(), name);
-    }
+    
 }
