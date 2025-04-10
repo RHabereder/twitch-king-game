@@ -3,6 +3,7 @@ using NLith.KingGame.Backend.Models;
 using Streamer.bot.Plugin.Interface;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
@@ -14,8 +15,10 @@ namespace NLith.KingGame.Backend.Services
     public class AdventureService
     {
         private TTSService ttsService;
-        private string adventureMP3Root = "C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\KingGame\\Expeditions";
+        private string soundfilesRoot = "C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\KingGame\\";        
 
+        private string adventuresJSON = "./adventures.json";
+        private string expeditionJSON = "./expeditions.json";
 
         IInlineInvokeProxy CPH;
         public AdventureService(IInlineInvokeProxy _CPH) 
@@ -26,10 +29,37 @@ namespace NLith.KingGame.Backend.Services
 
         public void GenerateAdventure(string username)
         {
-            MessageService msgService = new MessageService(CPH);
+            RunEvent(AdventureType.ADVENTURE, soundfilesRoot + "Adventures", username);        
+        }
 
-            CPH.LogInfo("Reading File ./kingly_expeditions.json into String");
-            string adventuresFileText = File.ReadAllText("./kingly_expeditions.json");
+        public void GenerateExpedition(string username)
+        {
+            RunEvent(AdventureType.EXPEDITION, soundfilesRoot + "Expeditions", username);
+        }
+
+
+        private void RunEvent(AdventureType type, string pathToSoundfiles, string adventurer)
+        {
+            MessageService msgService = new MessageService(CPH);
+            WalletService walletService = new WalletService(CPH);
+            UserService userService = new UserService(CPH);
+
+            string adventuresFileText = "";
+
+            bool hasEndings = false;
+            switch(type)
+            {
+                case AdventureType.ADVENTURE:
+                    adventuresFileText = File.ReadAllText(adventuresJSON);
+                    hasEndings = true;
+                    CPH.LogInfo("Reading File "+ adventuresJSON + " into String");
+                    break;
+                case AdventureType.EXPEDITION:
+                    adventuresFileText = File.ReadAllText(expeditionJSON);
+                    CPH.LogInfo("Reading File "+ expeditionJSON + " into String");
+                    break;
+            } 
+
             CPH.LogInfo("Deserializing into List<Adventure>");
             var deserializedAdventures = new List<Adventure>();
             var ms = new MemoryStream(Encoding.UTF8.GetBytes(adventuresFileText));
@@ -38,25 +68,46 @@ namespace NLith.KingGame.Backend.Services
             ms.Close();
 
             Random rng = new Random();
-            
+
 
             CPH.LogInfo("Deserialized into " + deserializedAdventures.ToString());
             CPH.LogInfo("Length: " + deserializedAdventures.Count);
             Adventure adventure = deserializedAdventures[rng.Next(0, deserializedAdventures.Count - 1)];
-            CPH.LogInfo("Picked adventure " + adventure.Title);            
-            string pathToAdventureSoundfile = adventureMP3Root + Path.DirectorySeparatorChar+ adventure.Type + Path.DirectorySeparatorChar + adventure.Title.Replace(" ", "_") + ".mp3";
+
+            CPH.LogInfo("Picked adventure " + adventure.Title);
+            string pathToAdventureSoundfile = pathToSoundfiles + Path.DirectorySeparatorChar + adventure.Type + Path.DirectorySeparatorChar + adventure.Title.Replace(" ", "_") + ".mp3";
             CPH.LogInfo("Constructed Path to MP3: " + pathToAdventureSoundfile);
 
             CPH.LogInfo("Playing soundfile: " + pathToAdventureSoundfile);
             CPH.PlaySound(pathToAdventureSoundfile, 10f, true);
 
-            WalletService walletService = new WalletService(CPH);
-            UserService userService = new UserService(CPH);
-
+            string message = "";
             int reward = rng.Next(adventure.TreasureMinimum, adventure.TreasureMaximum);
-            string message = string.Format("Congratulations {0}! Your expedition rewarded you with {1}{2}!", username, reward, ConfigService.CURRENCY_NAME);
+            
+            if(hasEndings)
+            {
+                bool hasSucceeded = (rng.Next(1, 2) == 1);
+                string pathToEnding = pathToSoundfiles + Path.DirectorySeparatorChar + adventure.Type + Path.DirectorySeparatorChar + adventure.Title.Replace(" ", "_");
+
+                if (hasSucceeded)
+                {
+                    pathToEnding += "_success.mp3";                    
+                    message = string.Format("Congratulations {0}! Your {3} rewarded you with {1} {2}!", adventurer, reward, ConfigService.CURRENCY_SYMBOL, type.ToString().ToLower());
+                } 
+                else
+                {
+                    pathToEnding += "_failure.mp3";
+                    message = string.Format("Unfortunately your {3} ended in failure! Your Hospital Bill will cost you {1} {2}!", adventurer, reward, ConfigService.CURRENCY_SYMBOL, type.ToString().ToLower());
+                }
+                CPH.LogInfo("Playing soundfile: " + pathToEnding);
+                CPH.PlaySound(pathToEnding, 10f, true);
+            } else
+            {
+                message = string.Format("Congratulations {0}! Your {3} rewarded you with {1} {2}!", adventurer, reward, ConfigService.CURRENCY_SYMBOL, type.ToString().ToLower());
+            }
+
             msgService.SendTwitchReply(message);
-            walletService.AwardPlayerAmount(username, reward);
+            walletService.AwardPlayerAmount(adventurer, reward);
         }
     }
 }

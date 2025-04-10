@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\Adventure.cs" />
+    <Compile Include="Models\AdventureType.cs" />
     <Compile Include="Models\Inventory.cs" />
     <Compile Include="Models\Item.cs" />
     <Compile Include="Models\Treasure.cs" />
@@ -65,9 +66,16 @@
     <Compile Include="Models\VoiceEnum.cs" />
     <Compile Include="Models\Wallet.cs" />
     <Compile Include="Models\Shop.cs" />
+    <Compile Include="Services\AdminService.cs" />
     <Compile Include="Services\AdventureService.cs" />
+    <Compile Include="Services\AnnouncementService.cs" />
     <Compile Include="Services\ChatterService.cs" />
+    <Compile Include="Services\InventoryService.cs" />
+    <Compile Include="Services\MiningService.cs" />
     <Compile Include="Services\MessageService.cs" />
+    <Compile Include="Services\RoyaltyService.cs" />
+    <Compile Include="Services\ShopService.cs" />
+    <Compile Include="Services\TaxService.cs" />
     <Compile Include="Services\TreasureService.cs" />
     <Compile Include="Services\ToolService.cs" />
     <Compile Include="Services\ConfigService.cs" />
