@@ -42,6 +42,7 @@ namespace NLith.KingGame.Backend.Services
         public static string CUSTOM_TAX_RATE_VAR_NAME = "kingsSetTax";
         public static string KINGS_PROTECTION_VAR_NAME = "isKingProtected";
         public static string KINGS_NAME_VAR_NAME = "king";
+        public static string KINGS_SUCCESSOR_VAR_NAME = "successor";
         public static string INVENTORY_VAR_NAME = "inventory";
         public static string INSURANCE_VAR_NAME = "hasInsurance";
 
@@ -74,9 +75,11 @@ namespace NLith.KingGame.Backend.Services
         { VoiceTypes.QUEEN, "Queen Announcer" },
         { VoiceTypes.KING, "King Announcer" },
         { VoiceTypes.REGULAR, "Peasant Announcer" },
-        { VoiceTypes.EXPEDITION, "Expedition Narrator" },
+        { VoiceTypes.EXPEDITION, "King Announcer" },
         { VoiceTypes.ADVENTURE, "Adventure Narrator" },
         { VoiceTypes.ASSASSIN, "Assassin Voice" },
+        { VoiceTypes.NEWS, "News Narrator" },
+
     };
 
         // Chatter Monitoring
@@ -99,5 +102,6 @@ namespace NLith.KingGame.Backend.Services
         // Filepaths
         // Path to File where active Chatters should be written to (should be truncated on every start)
         public static string PATH_ACTIVE_CHATTERS_FILE = "./activeChatters.txt";
+        public static string PATH_EVENTS_FILE = "./events.json";
     }
 }

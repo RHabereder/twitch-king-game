@@ -232,10 +232,57 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool CrownSpecificChatter()
     {
-        string username = GetTwitchUserFromCommandCall().UserName;
-        CrownChatter(username, false);
+        UserService usrSvc = new UserService(CPH);
+        RoyaltyService royaltySvc = new RoyaltyService(CPH); 
+
+
+        string redeemer = usrSvc.GetCurrentUserName(args);
+        TwitchUserInfo broadcasterUserInfo = CPH.TwitchGetBroadcaster();
+
+        string crowningTarget = usrSvc.SanitizeUsername(GetCommandArgument());
+        
+        
+        if (royaltySvc.UserIsKing(redeemer) 
+            || redeemer.Equals(broadcasterUserInfo.UserName) 
+            && !redeemer.Equals(crowningTarget))
+        {
+            CrownChatter(crowningTarget, false);
+        }
+        
         return true;
     }
+
+    /// <summary>
+    ///     Streamerbot Command that enables a King to set their own Successor. 
+    ///     In case of Death the successor automatically gets crowned King.
+    ///     If there is no successor set, the crown passes on randomly
+    /// </summary>
+    /// <returns></returns>
+    public bool SetSuccessor()
+    {
+        RoyaltyService royaltySvc = new RoyaltyService(CPH);
+        MessageService msgSvc = new MessageService(CPH);
+        string redeemer = new UserService(CPH).GetCurrentUserName(args);
+        string chosenSuccessor = GetCommandArgument();
+
+        if (royaltySvc.UserIsKing(redeemer))
+        {
+            if (!chosenSuccessor.Equals(redeemer))
+            {
+                royaltySvc.SetKingsSuccessor(chosenSuccessor);
+            } else
+            {
+                msgSvc.SendTwitchReply("Nice try, but no! Choose a new successor");
+            }
+        }
+        else
+        {
+            msgSvc.SendTwitchReply("Only the king can set their successor!");
+        }
+        return true;
+    }
+
+    
 
     /// <summary>
     ///     Simulates a duel between two users
@@ -412,7 +459,19 @@ public class CPHInline : CPHInlineBase
         walletService.FinePlayerAmount(new RoyaltyService(CPH).GetKingUsername(), ConfigService.REGICIDE_FAILURE_AMOUNT);
         walletService.AwardPlayerAmount(userService.GetCurrentUserName(args), ConfigService.REGICIDE_FAILURE_AMOUNT);
         KillKing();
-        CrownChatter(userService.GetCurrentUserName(args), false);
+
+        // Now we need to check if the King has a successor set, if so, we need to crown them
+        RoyaltyService royaltySvc = new RoyaltyService(CPH);
+        if (royaltySvc.KingHasSuccessor())
+        {
+            CrownChatter(royaltySvc.GetKingsSuccessor(), false);
+            // Since the successor has been crowned, we need to unset the value to make sure we don't loop here
+            new VarService(CPH).SetGlobalVariable<string>(ConfigService.KINGS_SUCCESSOR_VAR_NAME, "");
+        }
+        else
+        {
+            CrownChatter(userService.GetCurrentUserName(args), false);             
+        }
     }
 
     /// <summary>
@@ -439,8 +498,8 @@ public class CPHInline : CPHInlineBase
     ///     Handles the death of the king, which currently only strips them off of their VIP Status
     /// </summary>
     private void KillKing()
-    {        
-        CPH.TwitchRemoveVip(new RoyaltyService(CPH).GetKingUsername());
+    {
+        CPH.TwitchRemoveVip(new RoyaltyService(CPH).GetKingUsername());                
     }
 
     /// <summary>
@@ -454,7 +513,7 @@ public class CPHInline : CPHInlineBase
         string username = new UserService(CPH).GetCurrentUserName(args);
         if (new RoyaltyService(CPH).UserIsKing(username))
         {
-            if (GetCommandArgument() != null && GetCommandArgument().Trim().Length > 0)
+            if (CommandHasValidArgument())
             {
                 // Strip out possible Percentage-Signs and trim it right after
                 string rateParam = GetCommandArgument().Replace('%', ' ').Trim();
@@ -481,6 +540,12 @@ public class CPHInline : CPHInlineBase
 
         return true;
     }
+
+    private bool CommandHasValidArgument()
+    {
+        return GetCommandArgument() != null && GetCommandArgument().Trim().Length > 0;
+    }
+
     /// <summary>
     ///     Displays the current Tax-Rate
     /// </summary>
@@ -589,8 +654,17 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     private string GetCommandArgumentAtPosition(int position)
     {
-        if (args["input" + position] != null)
-            return args["input" + position].ToString();
+        string key = "input" + position;
+
+        if (args.ContainsKey(key))
+        {
+            if (args[key] != null)
+                return args["input" + position].ToString();
+        } else
+        {
+            CPH.LogError(string.Format("Key {0} does not exist!", key));
+        }
+
         return null;
     }
 
@@ -645,18 +719,9 @@ public class CPHInline : CPHInlineBase
 
         if (isKing)
         {
-            TTSService tts = new TTSService(CPH);
-            CPH.PlaySoundFromFolder("C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\Fanfare", 75, false, true);
-            if (new RoyaltyService(CPH).GetKingUsername().Equals("hey_zelfa"))
-            {
-                tts.CallTTS(VoiceTypes.QUEEN, GetCommandArgument(), false, null);
-            } 
-            else
-            {
-                tts.CallTTS(VoiceTypes.KING, GetCommandArgument(), false, null);
-            }
-
-            CPH.TwitchAnnounce(GetCommandArgument(), true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
+            String decree = GetCommandArgument();
+            AnnouncementService announcementService = new AnnouncementService(CPH);
+            announcementService.IssueRoyalDecree(decree);
         }
         else
         {
@@ -665,7 +730,7 @@ public class CPHInline : CPHInlineBase
         }
 
         return true;
-    }
+    }    
 
     /// <summary>
     ///     Method to call a paid Announcement with the Peasant Voice Announcer
@@ -692,10 +757,6 @@ public class CPHInline : CPHInlineBase
 
         return true;
     }
-
-    
-
-
 
     /// <summary>
     ///     Debugging Method to grant a player a sum of money

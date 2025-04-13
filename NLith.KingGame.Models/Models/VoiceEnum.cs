@@ -13,6 +13,7 @@ namespace NLith.KingGame.Backend.Models
         REGULAR,
         ADVENTURE,
         EXPEDITION,
-        ASSASSIN
+        ASSASSIN,
+        NEWS
     }
 }

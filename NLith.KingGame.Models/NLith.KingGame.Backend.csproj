@@ -86,7 +86,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\adventures.json" />
-    <None Include="Resources\kingly_expeditions.json" />
+    <None Include="Resources\events.json" />
+    <None Include="Resources\expeditions.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

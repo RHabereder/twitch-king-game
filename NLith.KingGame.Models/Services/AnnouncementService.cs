@@ -34,5 +34,21 @@ namespace NLith.KingGame.Backend.Services
             //CPH.TwitchAnnounce(announcement, true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, false);
             tts.CallTTS(VoiceTypes.KING, announcement, false, username);
         }
+
+        public void IssueRoyalDecree(string decree)
+        {
+            TTSService tts = new TTSService(CPH);
+            CPH.PlaySoundFromFolder("C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\Fanfare", 75, false, true);
+            if (new RoyaltyService(CPH).GetKingUsername().Equals("hey_zelfa"))
+            {
+                tts.CallTTS(VoiceTypes.QUEEN, decree, false, null);
+            }
+            else
+            {
+                tts.CallTTS(VoiceTypes.KING, decree, false, null);
+            }
+
+            CPH.TwitchAnnounce(decree, true, ConfigService.TWITCH_ANNOUNCE_COLOR_DEFAULT, true);
+        }
     }
 }

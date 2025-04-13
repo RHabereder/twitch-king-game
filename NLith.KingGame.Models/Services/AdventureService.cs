@@ -44,28 +44,21 @@ namespace NLith.KingGame.Backend.Services
             WalletService walletService = new WalletService(CPH);
             UserService userService = new UserService(CPH);
 
-            string adventuresFileText = "";
+            string pathToEventFile = "";
 
             bool hasEndings = false;
-            switch(type)
+            switch (type)
             {
                 case AdventureType.ADVENTURE:
-                    adventuresFileText = File.ReadAllText(adventuresJSON);
+                    pathToEventFile = adventuresJSON;
                     hasEndings = true;
-                    CPH.LogInfo("Reading File "+ adventuresJSON + " into String");
                     break;
                 case AdventureType.EXPEDITION:
-                    adventuresFileText = File.ReadAllText(expeditionJSON);
-                    CPH.LogInfo("Reading File "+ expeditionJSON + " into String");
+                    pathToEventFile = expeditionJSON;
                     break;
-            } 
+            }
 
-            CPH.LogInfo("Deserializing into List<Adventure>");
-            var deserializedAdventures = new List<Adventure>();
-            var ms = new MemoryStream(Encoding.UTF8.GetBytes(adventuresFileText));
-            var ser = new DataContractJsonSerializer(deserializedAdventures.GetType());
-            deserializedAdventures = ser.ReadObject(ms) as List<Adventure>;
-            ms.Close();
+            List<Adventure> deserializedAdventures = FileService.DeserializeJsonToList<Adventure>(pathToEventFile, CPH);
 
             Random rng = new Random();
 
@@ -81,19 +74,19 @@ namespace NLith.KingGame.Backend.Services
             CPH.LogInfo("Playing soundfile: " + pathToAdventureSoundfile);
             CPH.PlaySound(pathToAdventureSoundfile, 10f, true);
 
-            string message = "";
+            string message;
             int reward = rng.Next(adventure.TreasureMinimum, adventure.TreasureMaximum);
-            
-            if(hasEndings)
+
+            if (hasEndings)
             {
-                bool hasSucceeded = (rng.Next(1, 2) == 1);
+                bool hasSucceeded = (rng.Next(1, 3) == 1);
                 string pathToEnding = pathToSoundfiles + Path.DirectorySeparatorChar + adventure.Type + Path.DirectorySeparatorChar + adventure.Title.Replace(" ", "_");
 
                 if (hasSucceeded)
                 {
-                    pathToEnding += "_success.mp3";                    
+                    pathToEnding += "_success.mp3";
                     message = string.Format("Congratulations {0}! Your {3} rewarded you with {1} {2}!", adventurer, reward, ConfigService.CURRENCY_SYMBOL, type.ToString().ToLower());
-                } 
+                }
                 else
                 {
                     pathToEnding += "_failure.mp3";
@@ -101,7 +94,8 @@ namespace NLith.KingGame.Backend.Services
                 }
                 CPH.LogInfo("Playing soundfile: " + pathToEnding);
                 CPH.PlaySound(pathToEnding, 10f, true);
-            } else
+            }
+            else
             {
                 message = string.Format("Congratulations {0}! Your {3} rewarded you with {1} {2}!", adventurer, reward, ConfigService.CURRENCY_SYMBOL, type.ToString().ToLower());
             }
@@ -109,5 +103,7 @@ namespace NLith.KingGame.Backend.Services
             msgService.SendTwitchReply(message);
             walletService.AwardPlayerAmount(adventurer, reward);
         }
+
+        
     }
 }
