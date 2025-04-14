@@ -1,4 +1,5 @@
 ﻿using NLith.KingGame.Backend.Models;
+using NLith.KingGame.Backend.Models.CYOAdventure;
 using NLith.KingGame.Backend.Services;
 using Streamer.bot.Plugin.Interface;
 using Streamer.bot.Plugin.Interface.Model;
@@ -809,6 +810,33 @@ public class CPHInline : CPHInlineBase
         return true;
     }
 
+    /// <summary>
+    ///     Used for debugging, so you don't have to remap Commands all the time
+    /// </summary>
+    /// <returns>
+    ///     Boolean required by Streamerbot
+    /// </returns>
+    public bool Debug()
+    {
+        // WIP
+        //EventService eventSvc = new EventService(CPH);
+        //Event evt = eventSvc.GenerateEvent();
+        new ChooseYourOwnAdventureService(CPH).RunCYOAAdventure();
+        return true;
+    }
 
+
+    public bool VoteOption()
+    {
+        VoteService voteSvc = new VoteService(CPH);  
+        MessageService msgSvc = new MessageService(CPH); 
+        string redeemer = new UserService(CPH).GetCurrentUserName(args);
+        int.TryParse(GetCommandArgument(), out int chosenOption);
+        voteSvc.VoteOnOption(redeemer, chosenOption);
+
+        CPH.LogDebug($"{redeemer} voted Option {chosenOption}");
+        msgSvc.SendTwitchReply("Thank you for voting! Don't worry, you can always change your vote while it is running!");
+        return true;
+    }
 
 }

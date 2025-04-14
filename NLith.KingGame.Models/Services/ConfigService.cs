@@ -45,6 +45,7 @@ namespace NLith.KingGame.Backend.Services
         public static string KINGS_SUCCESSOR_VAR_NAME = "successor";
         public static string INVENTORY_VAR_NAME = "inventory";
         public static string INSURANCE_VAR_NAME = "hasInsurance";
+        public static string POLL_VAR_NAME = "currentPoll";
 
 
         // Economy Vars

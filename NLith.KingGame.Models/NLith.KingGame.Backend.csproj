@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Models\Adventure.cs" />
     <Compile Include="Models\AdventureType.cs" />
+    <Compile Include="Models\CYOAdventure\ChooseYourOwnAdventureBranch.cs" />
     <Compile Include="Models\Inventory.cs" />
     <Compile Include="Models\Item.cs" />
     <Compile Include="Models\Treasure.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="Services\AdventureService.cs" />
     <Compile Include="Services\AnnouncementService.cs" />
     <Compile Include="Services\ChatterService.cs" />
+    <Compile Include="Services\ChooseYourOwnAdventureService.cs" />
     <Compile Include="Services\InventoryService.cs" />
     <Compile Include="Services\MiningService.cs" />
     <Compile Include="Services\MessageService.cs" />
@@ -82,9 +84,11 @@
     <Compile Include="Services\TTSService.cs" />
     <Compile Include="Services\UserService.cs" />
     <Compile Include="Services\VarService.cs" />
+    <Compile Include="Services\VoteService.cs" />
     <Compile Include="Services\WalletService.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Models\CYOAdventure\resources\adventure1.json" />
     <None Include="Resources\adventures.json" />
     <None Include="Resources\events.json" />
     <None Include="Resources\expeditions.json" />
