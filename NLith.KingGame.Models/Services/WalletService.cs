@@ -100,7 +100,7 @@ namespace NLith.KingGame.Backend.Services
         public bool UserHasEnoughMoneyToGift(string username, int sum)
         {
             VarService varService = new VarService(CPH);            
-            return (sum < varService.GetUserVariable<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME));
+            return (sum <= varService.GetUserVariable<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME));
         }
     }
 }

@@ -60,6 +60,9 @@ namespace NLith.KingGame.Backend.Services
         public static int MINING_MINIMUM_FINE_AMOUNT = 100;
         public static int MINING_MAXIMUM_FINE_AMOUNT = 800;
 
+        public static int KINGS_PROTECTION_FEE = 1000;
+        public static int KINGS_PROTECTION_TIME = 5;
+
         // Loot Table
         // Definition in Nlith.KingGame.Models.ItemGenerator#L19
 

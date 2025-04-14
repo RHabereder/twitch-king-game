@@ -18,7 +18,6 @@ namespace NLith.KingGame.Backend.Services
 
         public void Mine(String username)
         {
-            UserService userSvc = new UserService(CPH);
             MessageService msgSvc = new MessageService(CPH);
             MiningService miningSvc = new MiningService(CPH);
             TaxService taxSvc = new TaxService(CPH);
@@ -35,12 +34,11 @@ namespace NLith.KingGame.Backend.Services
             if (randGen.Next(100) < (ConfigService.MINING_TREASURE_RATE + inv.CurrentRollBost))
             {
                 TreasureService gen = new TreasureService();
-                Item item = gen.GenerateTreasure();
-                inv.AddItem(item);
-                inventorySvc.SetPlayerInventory(username, inv);
+                Treasure treasure = gen.GenerateTreasure();                
+                inventorySvc.SetPlayerInventory(username, inv.AddItem(treasure));
 
-                string announcement = string.Format("User {0} just found a {1} {2}! Congratulations on your find!!", username, item.Tier.ToString(), item.Name);
-                msgSvc.SendTwitchReply(string.Format("You found a hidden treasure! You found a {0} {1} which is worth {2} {3} (tax-free)!", item.Tier.ToString(), item.Name, item.Value, ConfigService.CURRENCY_NAME));
+                string announcement = $"User {username} just found a {treasure.Tier} {treasure.Name}! Congratulations!";
+                msgSvc.SendTwitchReply($"You found a hidden treasure! You found a {treasure.Tier} {treasure.Name} which is worth {treasure.Value} {ConfigService.CURRENCY_NAME} (tax-free)!");
                 announcementSvc.AnnounceToAudience(announcement);
             }
 
@@ -60,8 +58,8 @@ namespace NLith.KingGame.Backend.Services
                 int paidTaxes = taxSvc.PayTaxes(haul);
                 int paidSalary = PayMiner(username, haul);
 
-                msgSvc.SendTwitchReply(string.Format("@{0} you mined {1} {2}! You paid {3} {2} in Taxes and were rewarded the remaining {4} {2}!",
-                        username, haul, ConfigService.CURRENCY_NAME, paidTaxes, paidSalary));
+                msgSvc.SendTwitchReply($"@{username} you mined {haul} {ConfigService.CURRENCY_NAME}! " +
+                    $"You paid {paidTaxes} {ConfigService.CURRENCY_NAME} in Taxes and were rewarded the remaining {paidSalary} {ConfigService.CURRENCY_NAME}!");
             }
         }
 
@@ -81,8 +79,8 @@ namespace NLith.KingGame.Backend.Services
             int fine = randomGen.Next(ConfigService.MINING_MINIMUM_FINE_AMOUNT, ConfigService.MINING_MAXIMUM_FINE_AMOUNT);
             walletSvc.FinePlayerAmount(username, fine);
 
-            new TTSService(CPH).CallTTS(VoiceTypes.REGULAR, string.Format("Weeeee you weeeee you, here comes the ambulance to rescue {0}!", username), false, null);
-            msgSvc.SendTwitchReply(string.Format("Oh no! You had a terrible accident while mining! ({0}% chance). The treatment cost you {1} {2}", ConfigService.MINING_INITIAL_ACCIDENT_RATE, fine, ConfigService.CURRENCY_NAME));
+            new TTSService(CPH).CallTTS(VoiceTypes.REGULAR, $"Weeeee you weeeee you, here comes the ambulance to rescue {username}!", false, null);
+            msgSvc.SendTwitchReply($"Oh no! You had a terrible accident while mining! ({ConfigService.MINING_INITIAL_ACCIDENT_RATE}% chance). The treatment cost you {fine} {ConfigService.CURRENCY_NAME}");
             return true;
         }
 

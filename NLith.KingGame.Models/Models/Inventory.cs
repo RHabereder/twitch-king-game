@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using Streamer.bot.Plugin.Interface;
 
 namespace NLith.KingGame.Backend.Models
 {
@@ -103,40 +104,6 @@ namespace NLith.KingGame.Backend.Models
             }
         }
 
-        public void AddTreasure(Treasure treasure)
-        {
-            Treasures.Add(treasure);
-            RecalculateWorth();
-        }
-        public void RemoveTreasure(Treasure treasure)
-        {
-            Treasures.Remove(treasure);
-            RecalculateWorth();
-        }
-
-        public void AddItem(Item item)
-        {            
-            Items.Add(item);
-            RecalculateWorth();
-        }
-        public void RemoveTreasure(Item item)
-        {
-            Items.Remove(item);
-            RecalculateWorth();
-        }
-
-        public void AddEquipment(Item item)
-        {
-            EquippedItems.Add(item);
-            RecalculateWorth();
-        }
-
-        public void RemoveEquipment(Item item)
-        {
-            EquippedItems.Add(item);
-            RecalculateWorth();
-        }
-
         public void EquipItem(Equipment equipment)
         {
             if (!IsItemEquipped(equipment))
@@ -190,6 +157,44 @@ namespace NLith.KingGame.Backend.Models
                     }
                 }
             }
+        }
+
+        internal Inventory RemoveItem(Item item, IInlineInvokeProxy CPH)
+        {
+            // The whole treasures vs Item thing still hasn't been finished
+            // So we still add treasures to the items collection
+            CPH.LogDebug(item.GetType().Name);
+            switch (item.GetType().Name)
+            {
+                case "Equipment":
+                case "Treasure":
+                case "Tool":
+                case "Item":
+                    int index = this.Items.FindIndex(searchItem => searchItem.Value == item.Value && searchItem.Name.Equals(item.Name));
+                    CPH.LogDebug($"Found {item.Name} with Value {item.Value} at Index {index}");
+                    this.Items.RemoveAt(index);
+                    break;
+            }
+            RecalculateWorth();
+            return this;
+        }
+
+        internal Inventory AddItem(Item item)
+        {
+
+            switch (item.GetType().Name)
+            {
+                case "Equipment":
+                    Items.Add(item);
+                    break;
+                case "Treasure":
+                    // The whole treasures vs Item thing still hasn't been finished
+                    // So we still add treasures to the items collection
+                    Items.Add(item);
+                    break;
+            }
+            RecalculateWorth();
+            return this;
         }
     }
 }

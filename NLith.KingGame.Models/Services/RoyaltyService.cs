@@ -68,8 +68,8 @@ namespace NLith.KingGame.Backend.Services
             UserService userService = new UserService(CPH);
             string userToJail = userService.SanitizeUsername(inmate);
 
-            CPH.TwitchTimeoutUser(userToJail, ConfigService.INITIAL_JAIL_TIME, reason);
-            CPH.PlaySoundFromFolder("C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\KingGame\\Jail", 75, false, true);
+            //CPH.TwitchTimeoutUser(userToJail, ConfigService.INITIAL_JAIL_TIME, reason);
+            CPH.PlaySoundFromFolder("C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\KingGame\\Jail", 1, false, true);
             string announcement = string.Format("User {0} has been Jailed for {1} seconds for: {2}", userToJail, ConfigService.INITIAL_JAIL_TIME, reason);
             new AnnouncementService(CPH).AnnounceToAudience(announcement, null);
         }

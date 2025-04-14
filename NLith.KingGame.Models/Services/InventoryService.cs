@@ -1,4 +1,5 @@
 ﻿using NLith.KingGame.Backend.Models;
+using NLith.KingGame.Backend.Services;
 using Streamer.bot.Plugin.Interface;
 using System;
 using System.Collections.Generic;
@@ -34,10 +35,13 @@ namespace NLith.KingGame.Backend.Services
 
             Item item = null;
 
+
             item = inv.Items.Find(i => i.Name.ToLower().Equals(itemName.ToLower()));
             // If its not in the Items Stack, it is in one of the other collections
+
             if (item == null)
             {
+                CPH.LogInfo($"Looking for Item {itemName} in Collection {"EquippedItems"}");
                 if (inv.EquippedItems != null)
                 {
                     item = inv.EquippedItems.Find(i => i.Name.ToLower().Contains(itemName.ToLower()));
@@ -45,6 +49,7 @@ namespace NLith.KingGame.Backend.Services
             }
             else if (item == null)
             {
+                CPH.LogInfo($"Looking for Item {itemName} in Collection {"Treasures"}");
                 if (inv.Treasures != null)
                 {
                     item = inv.Treasures.Find(i => i.Name.ToLower().Contains(itemName.ToLower()));
@@ -53,28 +58,91 @@ namespace NLith.KingGame.Backend.Services
 
             if (item != null)
             {
-                switch (item.GetType().Name)
-                {
-                    case "Equipment":
-                        inv.RemoveEquipment(item);
-                        break;
-                    case "Treasure":
-                        inv.RemoveTreasure(item);
-                        break;
-                }
+                CPH.LogInfo($"Found Item {item.Name}, Switching on {item.GetType()}");
 
+
+
+                string inventoryString = "";
+                inv.Items.ForEach(i => inventoryString += i.Name + ", ");
+                CPH.LogInfo(inventoryString);
+
+                CPH.LogInfo($"Removing {item.Name} from {redeemer}'s Inventory");
+                inv = inv.RemoveItem(item, CPH);
+                inventoryString = "";
+                inv.Items.ForEach(i => inventoryString += i.Name + ", ");
+                CPH.LogInfo(inventoryString);
+
+
+                CPH.LogInfo($"Setting inventory of {redeemer}'s Inventory");
                 SetPlayerInventory(redeemer, inv);
-                walletService.AwardPlayerAmount(redeemer, item.Value);
-                msgService.SendTwitchReply(string.Format("You sold your {0} for {1} {2}!", itemName, item.Value, ConfigService.CURRENCY_NAME));
+                CPH.LogInfo($"Awarding {redeemer} Item Value of {item.Value}");
+
+                bool itemHasBeenRemoved = (inv.Items.Find(searchItem => searchItem.Name.Equals(item.Name) && searchItem.Value.Equals(item.Value)) == null);
+
+                if(itemHasBeenRemoved)
+                {
+                    walletService.AwardPlayerAmount(redeemer, item.Value);
+                    msgService.SendTwitchReply($"You sold your {item.Name} for {item.Value} {ConfigService.CURRENCY_NAME}!");
+
+                } else
+                {
+                    CPH.LogDebug($"Something went wrong, {item.Name} should have been removed, but was not");
+                    msgService.SendTwitchReply($"Something went wrong! Your item was not sold!");
+                }
             }
             else
             {
-                msgService.SendTwitchReply(string.Format("You don't have a {0} in your inventory!", itemName));
+                msgService.SendTwitchReply($"You don't have a {itemName} in your inventory!");
             }
+        }
+        
+        /// <summary>
+        ///     Internal Method to sell all Treasures with a specific name (Like those 1000 Bat Fangs that clutter your inventory)
+        /// </summary>
+        /// <param name="redeemer"></param>
+        /// <param name="v"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void SellAllTreasuresWithName(string redeemer, string itemName)
+        {
+            WalletService walletSvc = new WalletService(CPH);
+            MessageService msgSvc = new MessageService(CPH);
+
+            Inventory inv = GetPlayerInventory(redeemer);
+            int lumpSum = 0;
+            inv.Items.ForEach(item =>
+            {
+                if(item.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase))
+                {
+                    lumpSum += item.Value;
+                }
+            });
+            CPH.LogInfo($"Calculated sell-sum of {lumpSum}");
+
+            // Removing all Items 
+            int removedItems = inv.Items.RemoveAll(item => item.Name.Equals(itemName));
+            inv.CrunchNumbers();
+            CPH.LogInfo($"Removed {removedItems} {itemName} items");
+
+            // Make sure all Items have been removed, before awarding the Player the sell-sum
+            // The int should be -1 if all Items have been successfully removed
+            int remainingItemsAfterSale = inv.Items.FindIndex(searchItem => searchItem.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+            if (remainingItemsAfterSale == -1 && removedItems > 0)
+            {
+                walletSvc.AwardPlayerAmount(redeemer, lumpSum);
+                msgSvc.SendTwitchReply($"You sold all your {itemName} for {lumpSum} {ConfigService.CURRENCY_NAME}!");
+
+                // Finally set the Inventory
+                SetPlayerInventory(redeemer, inv);
+            } 
+            else if(lumpSum > 0 && remainingItemsAfterSale > -1)
+            {
+                CPH.LogInfo($"Something went wrong here, Sell-Amount is {lumpSum} but inv.Items still contains {remainingItemsAfterSale} items");
+            }             
         }
 
         /// <summary>
         ///     Internal method to sell all Treasures from the inventory
+        ///     Currently unused, since it is quite Dangerous
         /// </summary>
         /// <returns></returns>
         public void SellAllTreasures(string username)
@@ -93,37 +161,7 @@ namespace NLith.KingGame.Backend.Services
 
             invService.SetPlayerInventory(redeemer, inv);
             walletService.AwardPlayerAmount(redeemer, totalTreasureValue);
-            msgService.SendTwitchReply(string.Format("You sold all your treasures for {0} {1}!", totalTreasureValue, ConfigService.CURRENCY_NAME));
-        }
-
-        public void ListPlayersEquipment(string username)
-        {
-            UserService userService = new UserService(CPH);
-            Inventory inv = GetPlayerInventory(username);
-
-            if (inv.EquippedItems.Count > 0)
-            {
-                string items = "";
-                inv.EquippedItems.ForEach(item =>
-                {
-                    switch (item.GetType().Name)
-                    {
-                        case "Equipment":
-                            items += string.Format("{0}({1} {2})", item.Name, item.Value, ConfigService.CURRENCY_SYMBOL) + ", ";
-                            break;
-                        case "Tool":
-                            Tool tool = (Tool)item;
-                            items += string.Format("{0}({1} uses left)", tool.Name, tool.Usages) + ", ";
-                            break;
-                    }
-                });
-                MessageService msgService = new MessageService(CPH);
-                msgService.SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalTreasureWorth, ConfigService.CURRENCY_NAME));
-            }
-            else
-            {
-                CPH.SendMessage("Your inventory is currently empty! Go and head into the Mine to spelunk for treasure!");
-            }
+            msgService.SendTwitchReply($"You sold all your treasures for {totalTreasureValue} {ConfigService.CURRENCY_NAME}!");
         }
 
         public void ListPlayersInventory(string username)
@@ -132,15 +170,19 @@ namespace NLith.KingGame.Backend.Services
 
             if (inv.Items.Count > 0)
             {
+                // Sort the Inventory by Value, if needed
+                inv.Items.Sort((x,y) => x.Value.CompareTo(y.Value));
+                
                 string items = "";
                 List<String> itemMessages = new List<string>();
 
+
                 inv.Items.ForEach(item =>
                 {
-                    items += string.Format("{0}({1})", item.Name, item.Value) + ", ";
+                    items += $"{item.Name}({item.Value}), ";
                 });
 
-                items = string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, ConfigService.CURRENCY_NAME);
+                items = $"You have the following treasures in your inventory: {items} and it is worth {inv.TotalInventoryWorth} {ConfigService.CURRENCY_NAME}";
                 while (items.Length > 450)
                 {
                     itemMessages.Add(items.Substring(0, 450));
@@ -160,29 +202,6 @@ namespace NLith.KingGame.Backend.Services
             }
         }
 
-        public void ListPlayersTreasure(string username)
-        {
-            UserService userService = new UserService(CPH);
-            Inventory inv = GetPlayerInventory(username);
-
-            if (inv.Items.Count > 0)
-            {
-
-                string items = "";
-                inv.Items.ForEach(item =>
-                {
-                    items += string.Format("{0}({1})", item.Name, item.Value) + ", ";
-                });
-                MessageService msgService = new MessageService(CPH);
-                msgService.SendTwitchReply(string.Format("You have the following treasures in your inventory: {0} and it is worth {1} {2}", items, inv.TotalInventoryWorth, ConfigService.CURRENCY_NAME));
-            }
-            else
-            {
-                CPH.SendMessage("Your inventory is currently empty! Go and head into the Mine to spelunk for treasure!");
-            }
-        }
-
-
         /// <summary>
         ///     WIP, Unused
         ///     Internal Method to add an item to a players inventory
@@ -192,8 +211,7 @@ namespace NLith.KingGame.Backend.Services
         public void AddItemToPlayerInventory(string username, Item item)
         {
             Inventory inventory = GetPlayerInventory(username);
-            inventory.AddItem(item);
-            SetPlayerInventory(username, inventory);
+            SetPlayerInventory(username, inventory.AddItem(item));
         }
 
         /// <summary>
@@ -239,12 +257,13 @@ namespace NLith.KingGame.Backend.Services
                 {
                     Tool tool = (Tool)item;
 
-                    messageString += string.Format("{0} has {1} Durability left, ", tool.Name, tool.Usages);
+                    messageString += $"{tool.Name} has {tool.Usages} Durability left, ";
 
                     MessageService msgService = new MessageService(CPH);
                     msgService.SendTwitchReply(messageString);
                 }
             }
         }
+
     }
 }

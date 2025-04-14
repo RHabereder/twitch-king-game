@@ -23,19 +23,25 @@ namespace NLith.KingGame.Backend.Services
         /// <returns></returns>
         public bool SetTax(float newRate)
         {
-            VarService varSvc = new VarService(CPH);
-            AnnouncementService announcementSvc = new AnnouncementService(CPH);
-
-            float oldRate = varSvc.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
-            // In case the rate has never been changed yet, this might throw an error, so we set the default just to be sure     
-            if (oldRate == 0)
+            if (newRate > 0)
             {
-                oldRate = ConfigService.INITIAL_TAX_RATE;
-            }
-            string announcement = string.Format("Hear ye, hear ye! King {0} changed the taxes from {1}% to {2}%, effective immediately!", new RoyaltyService(CPH).GetKingUsername(), oldRate, newRate);
-            announcementSvc.AnnounceToAudience(announcement, null);
+                VarService varSvc = new VarService(CPH);
+                AnnouncementService announcementSvc = new AnnouncementService(CPH);
 
-            varSvc.SetGlobalVariable(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, newRate);
+                float oldRate = varSvc.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
+                // In case the rate has never been changed yet, this might throw an error, so we set the default just to be sure     
+                if (oldRate == 0)
+                {
+                    oldRate = ConfigService.INITIAL_TAX_RATE;
+                }
+                string announcement = string.Format("Hear ye, hear ye! King {0} changed the taxes from {1}% to {2}%, effective immediately!", new RoyaltyService(CPH).GetKingUsername(), oldRate, newRate);
+                announcementSvc.AnnounceToAudience(announcement, null);
+
+                varSvc.SetGlobalVariable(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, newRate);
+            } else
+            {
+                new MessageService(CPH).SendTwitchReply("Taxes can't be negative, use the gift-command instead");
+            }
             return true;
         }
 

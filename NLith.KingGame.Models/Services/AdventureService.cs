@@ -93,7 +93,7 @@ namespace NLith.KingGame.Backend.Services
                     message = string.Format("Unfortunately your {3} ended in failure! Your Hospital Bill will cost you {1} {2}!", adventurer, reward, ConfigService.CURRENCY_SYMBOL, type.ToString().ToLower());
                 }
                 CPH.LogInfo("Playing soundfile: " + pathToEnding);
-                CPH.PlaySound(pathToEnding, 10f, true);
+                CPH.PlaySound(pathToEnding, 1, true);
             }
             else
             {

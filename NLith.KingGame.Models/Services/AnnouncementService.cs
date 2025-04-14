@@ -38,7 +38,7 @@ namespace NLith.KingGame.Backend.Services
         public void IssueRoyalDecree(string decree)
         {
             TTSService tts = new TTSService(CPH);
-            CPH.PlaySoundFromFolder("C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\Fanfare", 75, false, true);
+            CPH.PlaySoundFromFolder("C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\Fanfare", 1, false, true);
             if (new RoyaltyService(CPH).GetKingUsername().Equals("hey_zelfa"))
             {
                 tts.CallTTS(VoiceTypes.QUEEN, decree, false, null);
