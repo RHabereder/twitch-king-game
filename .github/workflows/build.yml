@@ -20,11 +20,11 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
     - name: Restore dependencies
-      run: nuget restore D:\a\twitch-king-game\King Game.sln
+      run: nuget restore "D:\a\twitch-king-game\King Game.sln"
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
     - name: Build and Publish Web App
-      run: msbuild D:\a\twitch-king-game\King Game.sln /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+      run: msbuild "D:\a\twitch-king-game\King Game.sln" /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
