@@ -1,5 +1,4 @@
 ﻿using NLith.KingGame.Backend.Models;
-using NLith.KingGame.Backend.Models.CYOAdventure;
 using NLith.KingGame.Backend.Services;
 using NLith.TwitchLib.Models;
 using NLith.TwitchLib.Services;

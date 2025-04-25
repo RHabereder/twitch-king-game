@@ -88,7 +88,7 @@
     <None Include="Resources\expeditions.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\TwitchLib\TwitchLib.csproj">
+    <ProjectReference Include="..\twitch-lib\TwitchLib.csproj">
       <Project>{13602ad7-468d-4af3-a1b2-da79449ddc0b}</Project>
       <Name>TwitchLib</Name>
     </ProjectReference>

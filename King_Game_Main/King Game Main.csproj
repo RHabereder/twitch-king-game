@@ -53,13 +53,13 @@
     <Compile Include="Class1.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\TwitchLib\TwitchLib.csproj">
-      <Project>{13602ad7-468d-4af3-a1b2-da79449ddc0b}</Project>
-      <Name>TwitchLib</Name>
-    </ProjectReference>
     <ProjectReference Include="..\NLith.KingGame.Models\NLith.KingGame.Backend.csproj">
       <Project>{f49f215a-2931-4a83-bea4-dcfd646e1343}</Project>
       <Name>NLith.KingGame.Backend</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\twitch-lib\TwitchLib.csproj">
+      <Project>{13602ad7-468d-4af3-a1b2-da79449ddc0b}</Project>
+      <Name>TwitchLib</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

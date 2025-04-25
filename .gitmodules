@@ -1,0 +1,3 @@
+[submodule "twitch-lib"]
+	path = twitch-lib
+	url = https://github.com/RHabereder/twitch-lib

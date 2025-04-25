@@ -17,9 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modpack", "Modpack\Modpack.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redeems", "Redeems\Redeems.csproj", "{625CE24A-C73A-4BC9-910F-B3B68E9FC199}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitchLib", "..\TwitchLib\TwitchLib.csproj", "{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitchStoryteller", "..\TwitchStoryteller\TwitchStoryteller.csproj", "{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitchLib", "twitch-lib\TwitchLib.csproj", "{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +45,6 @@ Global
 		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
