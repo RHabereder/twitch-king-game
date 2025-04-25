@@ -41,15 +41,14 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Streamer.bot.Plugin.Interface.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Streamer.bot.Common.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Streamer.bot.Auth.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Streamer.bot.EmoteHandlers.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\NAudio.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\NAudio.Core.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Newtonsoft.Json.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\Twitch.Common.dll" />
-    <Reference Include="C:\streaming\Streamer.bot-x64-0.2.6\websocket-sharp.dll" />
+    <Reference Include=".netdependencies\Streamer.bot.Plugin.Interface.dll" />
+    <Reference Include=".netdependencies\Streamer.bot.Common.dll" />
+    <Reference Include=".netdependencies\Streamer.bot.Auth.dll" />
+    <Reference Include=".netdependencies\Streamer.bot.EmoteHandlers.dll" />
+    <Reference Include=".netdependencies\NAudio.dll" />
+    <Reference Include=".netdependencies\NAudio.Core.dll" />
+    <Reference Include=".netdependencies\Newtonsoft.Json.dll" />
+    <Reference Include=".netdependencies\Twitch.Common.dll" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\Adventure.cs" />

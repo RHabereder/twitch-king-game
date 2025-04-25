@@ -12,17 +12,22 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 4.8.x
+      uses: actions/setup-dotnet@v3
     - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: nuget restore D:\a\twitch-lib\twitch-lib\TwitchLib.csproj
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+    - name: Build and Publish Web App
+      run: msbuild D:\a\King Game\King Game.sln /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: published_library
+        path: D:\a\King Game\bin\Release
+
