@@ -25,11 +25,11 @@ jobs:
       run: nuget restore "D:\a\twitch-king-game\twitch-king-game\King Game.sln"
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.1
-    - name: Build and Publish Web App
+    - name: Build and Publish Project
       run: msbuild "D:\a\twitch-king-game\twitch-king-game\King Game.sln" /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: published_library
-        path: D:\a\twitch-king-game\twitch-king-game\bin\Release
+        path: D:\a\twitch-king-game\twitch-king-game\King_Game_Main\bin\Release\NLith*.dll
 
