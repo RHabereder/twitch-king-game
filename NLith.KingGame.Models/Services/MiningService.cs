@@ -1,10 +1,7 @@
 ﻿using NLith.KingGame.Backend.Models;
+using NLith.TwitchLib.Services;
 using Streamer.bot.Plugin.Interface;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLith.KingGame.Backend.Services
 {
@@ -39,7 +36,7 @@ namespace NLith.KingGame.Backend.Services
 
                 string announcement = $"User {username} just found a {treasure.Tier} {treasure.Name}! Congratulations!";
                 msgSvc.SendTwitchReply($"You found a hidden treasure! You found a {treasure.Tier} {treasure.Name} which is worth {treasure.Value} {ConfigService.CURRENCY_NAME} (tax-free)!");
-                announcementSvc.AnnounceToAudience(announcement);
+                announcementSvc.AnnounceToAudience(announcement, ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[TwitchLib.Models.VoiceTypes.REGULAR]);
             }
 
             // Mining has a chance to result in Injury
@@ -79,7 +76,7 @@ namespace NLith.KingGame.Backend.Services
             int fine = randomGen.Next(ConfigService.MINING_MINIMUM_FINE_AMOUNT, ConfigService.MINING_MAXIMUM_FINE_AMOUNT);
             walletSvc.FinePlayerAmount(username, fine);
 
-            new TTSService(CPH).CallTTS(VoiceTypes.REGULAR, $"Weeeee you weeeee you, here comes the ambulance to rescue {username}!", false, null);
+            new TTSService(CPH).CallTTS(ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[TwitchLib.Models.VoiceTypes.REGULAR], $"Weeeee you weeeee you, here comes the ambulance to rescue {username}!", false);
             msgSvc.SendTwitchReply($"Oh no! You had a terrible accident while mining! ({ConfigService.MINING_INITIAL_ACCIDENT_RATE}% chance). The treatment cost you {fine} {ConfigService.CURRENCY_NAME}");
             return true;
         }

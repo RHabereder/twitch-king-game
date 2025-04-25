@@ -4,11 +4,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLith.KingGame.Backend", "NLith.KingGame.Models\NLith.KingGame.Backend.csproj", "{F49F215A-2931-4A83-BEA4-DCFD646E1343}"
+	ProjectSection(ProjectDependencies) = postProject
+		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B} = {13602AD7-468D-4AF3-A1B2-DA79449DDC0B}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "King Game Main", "King_Game_Main\King Game Main.csproj", "{643F2163-CC10-4310-8C5C-836DB64F11CE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F49F215A-2931-4A83-BEA4-DCFD646E1343} = {F49F215A-2931-4A83-BEA4-DCFD646E1343}
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Modpack", "Modpack\Modpack.csproj", "{71D31ECB-C6E4-48AB-9552-A200E78AA4CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Redeems", "Redeems\Redeems.csproj", "{625CE24A-C73A-4BC9-910F-B3B68E9FC199}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitchLib", "..\TwitchLib\TwitchLib.csproj", "{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitchStoryteller", "..\TwitchStoryteller\TwitchStoryteller.csproj", "{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +35,22 @@ Global
 		{643F2163-CC10-4310-8C5C-836DB64F11CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{643F2163-CC10-4310-8C5C-836DB64F11CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{643F2163-CC10-4310-8C5C-836DB64F11CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71D31ECB-C6E4-48AB-9552-A200E78AA4CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71D31ECB-C6E4-48AB-9552-A200E78AA4CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71D31ECB-C6E4-48AB-9552-A200E78AA4CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71D31ECB-C6E4-48AB-9552-A200E78AA4CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{625CE24A-C73A-4BC9-910F-B3B68E9FC199}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{625CE24A-C73A-4BC9-910F-B3B68E9FC199}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{625CE24A-C73A-4BC9-910F-B3B68E9FC199}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{625CE24A-C73A-4BC9-910F-B3B68E9FC199}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13602AD7-468D-4AF3-A1B2-DA79449DDC0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4A9BEFB-E338-4781-BC4B-E08F7C6ECDCC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

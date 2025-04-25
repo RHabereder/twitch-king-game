@@ -1,9 +1,6 @@
-﻿using Streamer.bot.Plugin.Interface;
+﻿using NLith.TwitchLib.Services;
+using Streamer.bot.Plugin.Interface;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLith.KingGame.Backend.Services
 {
@@ -100,7 +97,7 @@ namespace NLith.KingGame.Backend.Services
         public bool UserHasEnoughMoneyToGift(string username, int sum)
         {
             VarService varService = new VarService(CPH);            
-            return (sum <= varService.GetUserVariable<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME));
+            return (sum <= varService.GetUserVariable<int>(username, ConfigService.PLAYER_MONEY_VAR_NAME, ConfigService.IS_GAME_PERSISTENT));
         }
     }
 }

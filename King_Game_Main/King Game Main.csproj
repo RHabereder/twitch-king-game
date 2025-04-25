@@ -51,11 +51,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Class1.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\TwitchLib\TwitchLib.csproj">
+      <Project>{13602ad7-468d-4af3-a1b2-da79449ddc0b}</Project>
+      <Name>TwitchLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NLith.KingGame.Models\NLith.KingGame.Backend.csproj">
-      <Project>{F49F215A-2931-4A83-BEA4-DCFD646E1343}</Project>
+      <Project>{f49f215a-2931-4a83-bea4-dcfd646e1343}</Project>
       <Name>NLith.KingGame.Backend</Name>
     </ProjectReference>
   </ItemGroup>

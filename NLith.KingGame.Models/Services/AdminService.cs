@@ -1,10 +1,6 @@
 ﻿using NLith.KingGame.Backend.Models;
+using NLith.TwitchLib.Services;
 using Streamer.bot.Plugin.Interface;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLith.KingGame.Backend.Services
 {
@@ -45,10 +41,10 @@ namespace NLith.KingGame.Backend.Services
             CPH.LogInfo("Resetting Account of " + username);
             Inventory inventory = new Inventory();
             CPH.LogInfo("Resetting inventory of " + username);
-            varService.SetUserVariable(username, ConfigService.INVENTORY_VAR_NAME, inventory);
+            varService.SetUserVariable(username, ConfigService.INVENTORY_VAR_NAME, inventory, ConfigService.IS_GAME_PERSISTENT);
 
             CPH.LogInfo("Resetting wallet of " + username);
-            varService.SetUserVariable(username, ConfigService.PLAYER_MONEY_VAR_NAME, 0);
+            varService.SetUserVariable(username, ConfigService.PLAYER_MONEY_VAR_NAME, 0, ConfigService.IS_GAME_PERSISTENT);
             msgService.SendTwitchReply(string.Format("@{0} your points and inventory were reset!", username));
         }
     }

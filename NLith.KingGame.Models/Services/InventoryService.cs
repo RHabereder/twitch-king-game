@@ -1,11 +1,8 @@
 ﻿using NLith.KingGame.Backend.Models;
-using NLith.KingGame.Backend.Services;
+using NLith.TwitchLib.Services;
 using Streamer.bot.Plugin.Interface;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLith.KingGame.Backend.Services
 {
@@ -222,11 +219,11 @@ namespace NLith.KingGame.Backend.Services
         public Inventory GetPlayerInventory(string user)
         {
             VarService varService = new VarService(CPH);
-            Inventory inv = varService.GetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME);
+            Inventory inv = varService.GetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME, ConfigService.IS_GAME_PERSISTENT);
             if (inv == null)
             {
                 inv = new Inventory();
-                varService.SetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME, inv);
+                varService.SetUserVariable<Inventory>(user, ConfigService.INVENTORY_VAR_NAME, inv, ConfigService.IS_GAME_PERSISTENT);
             }
             return inv;
         }
@@ -238,7 +235,7 @@ namespace NLith.KingGame.Backend.Services
         public void SetPlayerInventory(string playerName, Inventory inv)
         {
             VarService varService = new VarService(CPH);
-            varService.SetUserVariable(playerName, ConfigService.INVENTORY_VAR_NAME, inv);
+            varService.SetUserVariable(playerName, ConfigService.INVENTORY_VAR_NAME, inv, ConfigService.IS_GAME_PERSISTENT);
         }
 
 

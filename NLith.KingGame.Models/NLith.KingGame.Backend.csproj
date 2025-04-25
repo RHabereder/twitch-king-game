@@ -54,9 +54,11 @@
   <ItemGroup>
     <Compile Include="Models\Adventure.cs" />
     <Compile Include="Models\AdventureType.cs" />
-    <Compile Include="Models\CYOAdventure\ChooseYourOwnAdventureBranch.cs" />
+    <Compile Include="Models\Event.cs" />
     <Compile Include="Models\Inventory.cs" />
     <Compile Include="Models\Item.cs" />
+    <Compile Include="Models\Poll.cs" />
+    <Compile Include="Models\Reward.cs" />
     <Compile Include="Models\Treasure.cs" />
     <Compile Include="Models\Equipment.cs" />
     <Compile Include="Models\Tool.cs" />
@@ -64,27 +66,19 @@
     <Compile Include="Models\ToolCategory.cs" />
     <Compile Include="Models\AugmentType.cs" />
     <Compile Include="Models\Profile.cs" />
-    <Compile Include="Models\VoiceEnum.cs" />
     <Compile Include="Models\Wallet.cs" />
     <Compile Include="Models\Shop.cs" />
     <Compile Include="Services\AdminService.cs" />
     <Compile Include="Services\AdventureService.cs" />
-    <Compile Include="Services\AnnouncementService.cs" />
-    <Compile Include="Services\ChatterService.cs" />
-    <Compile Include="Services\ChooseYourOwnAdventureService.cs" />
+    <Compile Include="Services\EventService.cs" />
     <Compile Include="Services\InventoryService.cs" />
     <Compile Include="Services\MiningService.cs" />
-    <Compile Include="Services\MessageService.cs" />
     <Compile Include="Services\RoyaltyService.cs" />
     <Compile Include="Services\ShopService.cs" />
     <Compile Include="Services\TaxService.cs" />
     <Compile Include="Services\TreasureService.cs" />
     <Compile Include="Services\ToolService.cs" />
     <Compile Include="Services\ConfigService.cs" />
-    <Compile Include="Services\TTSService.cs" />
-    <Compile Include="Services\UserService.cs" />
-    <Compile Include="Services\VarService.cs" />
-    <Compile Include="Services\VoteService.cs" />
     <Compile Include="Services\WalletService.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -92,6 +86,12 @@
     <None Include="Resources\adventures.json" />
     <None Include="Resources\events.json" />
     <None Include="Resources\expeditions.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\TwitchLib\TwitchLib.csproj">
+      <Project>{13602ad7-468d-4af3-a1b2-da79449ddc0b}</Project>
+      <Name>TwitchLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,24 +1,19 @@
 ﻿using Newtonsoft.Json;
 using NLith.KingGame.Backend.Models;
+using NLith.TwitchLib.Services;
 using Streamer.bot.Plugin.Interface;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Runtime.Serialization.Json;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLith.KingGame.Backend.Services
 {
     public class AdventureService
     {
-        private TTSService ttsService;
         private string soundfilesRoot = "C:\\Users\\rex\\OneDrive\\Dokumente\\Audacity\\CCC\\KingGame\\";        
 
-        private string adventuresJSON = "./adventures.json";
-        private string expeditionJSON = "./expeditions.json";
+        private string adventuresJSON = $"{ConfigService.PATH_ADVENTURES_DIR}/adventures.json";
+        private string expeditionJSON = $"{ConfigService.PATH_EXPEDITIONS_DIR}/expeditions.json";
 
         IInlineInvokeProxy CPH;
         public AdventureService(IInlineInvokeProxy _CPH) 
@@ -57,15 +52,15 @@ namespace NLith.KingGame.Backend.Services
                     pathToEventFile = expeditionJSON;
                     break;
             }
-
-            List<Adventure> deserializedAdventures = FileService.DeserializeJsonToList<Adventure>(pathToEventFile, CPH);
+            string fileContent = File.ReadAllText(pathToEventFile);
+            List<Adventure> deserializedAdventures = JsonConvert.DeserializeObject<List<Adventure>>(fileContent);
 
             Random rng = new Random();
 
 
             CPH.LogInfo("Deserialized into " + deserializedAdventures.ToString());
             CPH.LogInfo("Length: " + deserializedAdventures.Count);
-            Adventure adventure = deserializedAdventures[rng.Next(0, deserializedAdventures.Count - 1)];
+            Adventure adventure = deserializedAdventures[rng.Next(0, deserializedAdventures.Count)];
 
             CPH.LogInfo("Picked adventure " + adventure.Title);
             string pathToAdventureSoundfile = pathToSoundfiles + Path.DirectorySeparatorChar + adventure.Type + Path.DirectorySeparatorChar + adventure.Title.Replace(" ", "_") + ".mp3";

@@ -1,10 +1,8 @@
 ﻿using NLith.KingGame.Backend.Models;
+using NLith.TwitchLib.Models;
+using NLith.TwitchLib.Services;
 using Streamer.bot.Plugin.Interface;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLith.KingGame.Backend.Services
 {
@@ -30,11 +28,11 @@ namespace NLith.KingGame.Backend.Services
 
             Shop<Equipment> equipmentShop = new Shop<Equipment>();
             equipmentShop.RestockShop();
-            varService.SetGlobalVariable<Shop<Equipment>>(ConfigService.EQUIPMENT_SHOP_VAR_NAME, equipmentShop);
+            varService.SetGlobalVariable<Shop<Equipment>>(ConfigService.EQUIPMENT_SHOP_VAR_NAME, equipmentShop, ConfigService.IS_GAME_PERSISTENT);
 
             Shop<Tool> toolShop = new Shop<Tool>();
             toolShop.RestockShop();
-            varService.SetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME, toolShop);
+            varService.SetGlobalVariable<Shop<Tool>>(ConfigService.TOOL_SHOP_VAR_NAME, toolShop, ConfigService.IS_GAME_PERSISTENT);
         }
 
         /// <summary>
@@ -48,7 +46,7 @@ namespace NLith.KingGame.Backend.Services
             VarService varService = new VarService(CPH);
 
             walletService.FinePlayerAmount(username, ConfigService.INSURANCE_FEE_AMOUNT);
-            varService.SetUserVariable(username, ConfigService.INSURANCE_VAR_NAME, true);
+            varService.SetUserVariable(username, ConfigService.INSURANCE_VAR_NAME, true, ConfigService.IS_GAME_PERSISTENT);
         }
 
         /// <summary>
@@ -59,7 +57,7 @@ namespace NLith.KingGame.Backend.Services
         {
             SetUpShop();
             string announcement = "The Shop has been restocked! Check it with !shop";
-            new AnnouncementService(CPH).AnnounceToAudience(announcement);
+            new AnnouncementService(CPH).AnnounceToAudience(announcement, ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[VoiceTypes.REGULAR]);
         }
 
         public void DisplayShopStock()

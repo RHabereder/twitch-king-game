@@ -1,6 +1,8 @@
 ﻿using NLith.KingGame.Backend.Models;
 using NLith.KingGame.Backend.Models.CYOAdventure;
 using NLith.KingGame.Backend.Services;
+using NLith.TwitchLib.Models;
+using NLith.TwitchLib.Services;
 using Streamer.bot.Plugin.Interface;
 using Streamer.bot.Plugin.Interface.Model;
 using System;
@@ -32,17 +34,6 @@ public class CPHInline : CPHInlineBase
         return this.chatterService;
     }
 
-    /// <summary>
-    ///     Used for debugging, so you don't have to remap Commands all the time
-    /// </summary>
-    /// <returns>
-    ///     Boolean required by Streamerbot
-    /// </returns>
-    public bool Debug()
-    {
-        return true;
-    }
-
     public bool KinglyExpedition()
     {
         MessageService msgService = new MessageService(CPH);
@@ -55,8 +46,10 @@ public class CPHInline : CPHInlineBase
             AdventureService advService = new AdventureService(CPH);
 
             string currentKing = new RoyaltyService(CPH).GetKingUsername();
-            string announcement = $"Our Monarch {currentKing} has decided to embark on an Expedition! This is how it turned out.";
-            new AnnouncementService(CPH).AnnounceToAudience(announcement);
+            string announcement = $"Our Monarch {currentKing} has decided to embark on an Expedition!";
+            string voiceID = ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[VoiceTypes.KING];
+
+            new AnnouncementService(CPH).AnnounceToAudience(announcement, voiceID);
             CPH.Wait(6000);
             advService.GenerateExpedition(currentKing);
         } else
@@ -76,8 +69,9 @@ public class CPHInline : CPHInlineBase
         if (!royaltySvc.UserIsKing(redeemer))
         {
             AdventureService advService = new AdventureService(CPH);
-            string announcement = $"Peasant {usrSvc.GetCurrentUserName(args)} has decided to embark on an Adventure! This is how it turned out.";
-            new AnnouncementService(CPH).AnnounceToAudience(announcement);
+            string announcement = $"Peasant {usrSvc.GetCurrentUserName(args)} has decided to embark on an Adventure!";
+            string voiceID = ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[VoiceTypes.ADVENTURE];
+            new AnnouncementService(CPH).AnnounceToAudience(announcement, voiceID);
             CPH.Wait(6000);
             advService.GenerateAdventure(usrSvc.GetCurrentUserName(args));
         }
@@ -109,12 +103,13 @@ public class CPHInline : CPHInlineBase
     {
         string redeemer = new UserService(CPH).GetCurrentUserName(args);
         MessageService msgService = new MessageService(CPH);
-        RoyaltyService royaltyService = new RoyaltyService(CPH);
-        if (royaltyService.UserIsKing(redeemer))
+        RoyaltyService royaltySvc = new RoyaltyService(CPH);
+        ArgService argSvc = new ArgService(CPH);
+        if (royaltySvc.UserIsKing(redeemer))
         {
-            string inmate = GetCommandArgumentAtPosition(0);
+            string inmate = argSvc.GetCommandArgumentAtPosition(args, 0);
             String reason = "";
-            string commandArgument = GetCommandArgument();
+            string commandArgument = argSvc.GetCommandArgument(args);
 
             if (commandArgument.Split(' ').Length > 1)
             {
@@ -129,7 +124,7 @@ public class CPHInline : CPHInlineBase
             {
                 reason = "No reason";
             }
-            royaltyService.JailUser(inmate, reason);
+            royaltySvc.JailUser(inmate, reason);
         }
         else
         {
@@ -146,22 +141,26 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool SellItem()
     {
-        InventoryService invService = new InventoryService(CPH);
-        UserService userService = new UserService(CPH);
-
-        string redeemer = userService.GetCurrentUserName(args);
+        InventoryService invSvc = new InventoryService(CPH);
+        UserService userSvc = new UserService(CPH);
+        ArgService argSvc = new ArgService(CPH);
+        string redeemer = userSvc.GetCurrentUserName(args);
         CPH.LogInfo($"Player {redeemer} requested Sell-Action");
-        if (GetCommandArgument().ToLower().StartsWith("all") && GetCommandArgumentAtPosition(1) != null)            
+
+        string argument = argSvc.GetCommandArgument(args).ToLower();
+        string item = argSvc.GetCommandArgumentAtPosition(args, 1);
+
+        if (argument.StartsWith("all") && item != null)            
         {
-            string itemName = GetCommandArgument().Replace("all", "").Trim();
+            string itemName = argument.Replace("all", "").Trim();
             CPH.LogInfo($"Player {redeemer} attempts selling all their {itemName}");
             //To just make it easier on ourself, we replace the all out of it and get the Item Name
-            invService.SellAllTreasuresWithName(redeemer, itemName);
+            invSvc.SellAllTreasuresWithName(redeemer, itemName);
         }
         else
         {
-            CPH.LogInfo($"Player {redeemer} attempts selling of {GetCommandArgument()}");
-            invService.SellSingleItem(GetCommandArgument(), redeemer);
+            CPH.LogInfo($"Player {redeemer} attempts selling of {argument}");
+            invSvc.SellSingleItem(argument, redeemer);
 
         }
         return true;
@@ -238,12 +237,12 @@ public class CPHInline : CPHInlineBase
     {
         UserService usrSvc = new UserService(CPH);
         RoyaltyService royaltySvc = new RoyaltyService(CPH); 
-
+        ArgService argSvc = new ArgService(CPH);    
 
         string redeemer = usrSvc.GetCurrentUserName(args);
         TwitchUserInfo broadcasterUserInfo = CPH.TwitchGetBroadcaster();
 
-        string crowningTarget = usrSvc.SanitizeUsername(GetCommandArgument());
+        string crowningTarget = usrSvc.SanitizeUsername(argSvc.GetCommandArgument(args));
         
         
         if (royaltySvc.UserIsKing(redeemer) 
@@ -257,36 +256,61 @@ public class CPHInline : CPHInlineBase
     }
 
     /// <summary>
-    ///     Streamerbot Command that enables a King to set their own Successor. 
-    ///     In case of Death the successor automatically gets crowned King.
+    ///     Streamerbot Command that either gets a successor, if no command arguments have been provided.
+    ///     If an argument has been provided, a Role-Check happens, so only King can set their own Successor. 
+    ///     In case of Death the successor automatically gets crowned as King.
     ///     If there is no successor set, the crown passes on randomly
     /// </summary>
     /// <returns></returns>
-    public bool SetSuccessor()
+    public bool Successor()
     {
         RoyaltyService royaltySvc = new RoyaltyService(CPH);
         MessageService msgSvc = new MessageService(CPH);
+        ArgService argSvc = new ArgService(CPH);
         string redeemer = new UserService(CPH).GetCurrentUserName(args);
-        string chosenSuccessor = GetCommandArgument();
+        string chosenSuccessor;
 
-        if (royaltySvc.UserIsKing(redeemer))
+        LogArgs();
+
+        CPH.LogInfo("Checking if an argument has been provided");
+        if(CommandHasValidArgument())
         {
-            if (!chosenSuccessor.Equals(redeemer))
+            CPH.LogInfo("Argument was set, entering Role-Checks");
+            chosenSuccessor = argSvc.GetCommandArgumentAtPosition(args,0);
+            if (royaltySvc.UserIsKing(redeemer) && !string.IsNullOrEmpty(chosenSuccessor))
             {
-                royaltySvc.SetKingsSuccessor(chosenSuccessor);
-            } else
+                if (!chosenSuccessor.Equals(redeemer))
+                {
+                    royaltySvc.SetKingsSuccessor(chosenSuccessor);
+                }
+                else
+                {
+                    msgSvc.SendTwitchReply("Nice try, but no! Choose a new successor");
+                }
+            }
+            else if (!royaltySvc.UserIsKing(redeemer) && !string.IsNullOrEmpty(chosenSuccessor))
             {
-                msgSvc.SendTwitchReply("Nice try, but no! Choose a new successor");
+                msgSvc.SendTwitchReply("Only the king can set their successor!");
             }
         }
         else
         {
-            msgSvc.SendTwitchReply("Only the king can set their successor!");
+            royaltySvc.GetSuccessor();
         }
+
+
         return true;
     }
 
-    
+    private void LogArgs()
+    {
+        foreach(KeyValuePair<String, Object> kvp in args)
+        {
+            CPH.LogDebug($"{kvp.Key}: {kvp.Value}");
+        }
+    }
+
+
 
     /// <summary>
     ///     Simulates a duel between two users
@@ -298,7 +322,7 @@ public class CPHInline : CPHInlineBase
         string redeemer = userService.GetCurrentUserName(args);
 
 
-        string target = GetCommandArgument();
+        string target = new ArgService(CPH).GetCommandArgument(args);
 
         Random rand = new Random();
         int roll = rand.Next(1, 100);
@@ -326,9 +350,10 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool GiftMoney()
     {
-        UserService userService = new UserService(CPH);
-        WalletService walletService = new WalletService(CPH);
-        walletService.GiftMoney(userService.GetCurrentUserName(args), GetCommandArgumentAtPosition(0), GetCommandArgumentAtPosition(1));
+        UserService userSvc = new UserService(CPH);
+        WalletService walletSvc = new WalletService(CPH);
+        ArgService argSvc = new ArgService(CPH);
+        walletSvc.GiftMoney(userSvc.GetCurrentUserName(args), argSvc.GetCommandArgumentAtPosition(args, 0), argSvc.GetCommandArgumentAtPosition(args, 1));
         
         return true;
     }
@@ -348,7 +373,7 @@ public class CPHInline : CPHInlineBase
     {
         VarService varService = new VarService(CPH);
 
-        varService.SetGlobalVariable(ConfigService.KINGS_NAME_VAR_NAME, username);        
+        varService.SetGlobalVariable(ConfigService.KINGS_NAME_VAR_NAME, username, ConfigService.IS_GAME_PERSISTENT);        
         string currentKing = new RoyaltyService(CPH).GetKingUsername();        
         if (!suppressMessage)
         {
@@ -375,9 +400,7 @@ public class CPHInline : CPHInlineBase
         UserService userService = new UserService(CPH);
 
         string user = userService.GetCurrentUserName(args);
-        CPH.LogDebug("Prepare for boom");
-        int balance = varService.GetUserVariable<int>(user, ConfigService.PLAYER_MONEY_VAR_NAME);
-        CPH.LogDebug("Current Balance of Player: " + user + " is " + balance);
+        int balance = varService.GetUserVariable<int>(user, ConfigService.PLAYER_MONEY_VAR_NAME, ConfigService.IS_GAME_PERSISTENT);
         msgService.SendTwitchReply($"Hey {user}, your current Wallet Balance is: {balance}!");
         return true;
     }
@@ -434,7 +457,7 @@ public class CPHInline : CPHInlineBase
         Random rand = new Random();
         int roll = rand.Next(1, 100);
         // Equals a success and initiates a regicide
-        if (roll > 1)
+        if (roll > 50)
         {
             CPH.SendMessage($"User {redeemer} murdered King {currentKing} in cold blood and can steal the crown!", true, true);
             RegicideSuccess();
@@ -479,7 +502,7 @@ public class CPHInline : CPHInlineBase
         {
             CrownChatter(royaltySvc.GetKingsSuccessor(), false);
             // Since the successor has been crowned, we need to unset the value to make sure we don't loop here
-            new VarService(CPH).SetGlobalVariable<string>(ConfigService.KINGS_SUCCESSOR_VAR_NAME, "");
+            new VarService(CPH).SetGlobalVariable<string>(ConfigService.KINGS_SUCCESSOR_VAR_NAME, "", ConfigService.IS_GAME_PERSISTENT);
         }
         else
         {
@@ -529,7 +552,7 @@ public class CPHInline : CPHInlineBase
             if (CommandHasValidArgument())
             {
                 // Strip out possible Percentage-Signs and trim it right after
-                string rateParam = GetCommandArgument().Replace('%', ' ').Trim();
+                string rateParam = new ArgService(CPH).GetCommandArgument(args).Replace('%', ' ').Trim();
                 if (float.TryParse(rateParam, out float rate))
                 {
                     TaxService taxSvc = new TaxService(CPH);
@@ -556,7 +579,8 @@ public class CPHInline : CPHInlineBase
 
     private bool CommandHasValidArgument()
     {
-        return GetCommandArgument() != null && GetCommandArgument().Trim().Length > 0;
+        ArgService argSvc = new ArgService(CPH);
+        return argSvc.GetCommandArgument(args) != null && argSvc.GetCommandArgument(args).Trim().Length > 0;
     }
 
     /// <summary>
@@ -587,7 +611,7 @@ public class CPHInline : CPHInlineBase
     private void SetKingsProtection(bool isProtected)
     {
         VarService varService = new VarService(CPH);
-        varService.SetGlobalVariable(ConfigService.KINGS_PROTECTION_VAR_NAME, DateTime.Now.AddMinutes(5d));
+        varService.SetGlobalVariable(ConfigService.KINGS_PROTECTION_VAR_NAME, DateTime.Now.AddMinutes(5d), ConfigService.IS_GAME_PERSISTENT);
     }
 
 
@@ -623,7 +647,7 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool ResetAccountOfChatter()
     {
-        string username = GetCommandArgumentAtPosition(0);
+        string username = new ArgService(CPH).GetCommandArgumentAtPosition(args, 0);
         new AdminService(CPH).ResetAccountOfChatter(username);
         return true;
     }
@@ -635,7 +659,7 @@ public class CPHInline : CPHInlineBase
     public TwitchUserInfo GetTwitchUserFromCommandCall()
     {
         UserService userService = new UserService(CPH);
-        string user = GetCommandArgument();
+        string user = new ArgService(CPH).GetCommandArgument(args);
         user = userService.SanitizeUsername(user);
         if (!string.IsNullOrEmpty(user))
         {
@@ -648,38 +672,7 @@ public class CPHInline : CPHInlineBase
         return null;
     }
 
-    /// <summary>
-    ///     Gets the input from the redeemed Command
-    /// </summary>
-    /// <returns></returns>
-    public string GetCommandArgument()
-    {
-        if (args["rawInputEscaped"] != null)
-            return args["rawInputEscaped"].ToString();
-        return null;
-    }
-
-    /// <summary>
-    ///     Streamerbot translates a command into an array and every position is available in the args-Dictionary
-    ///     Gets a positional input from the Command
-    /// </summary>
-    /// <param name="position">Position of the String Token to return</param>
-    /// <returns></returns>
-    private string GetCommandArgumentAtPosition(int position)
-    {
-        string key = "input" + position;
-
-        if (args.ContainsKey(key))
-        {
-            if (args[key] != null)
-                return args["input" + position].ToString();
-        } else
-        {
-            CPH.LogError($"Key {key} does not exist!");
-        }
-
-        return null;
-    }
+    
 
     /// <summary>
     ///     Shows a player their Inventory in a message
@@ -707,9 +700,9 @@ public class CPHInline : CPHInlineBase
 
         if (isKing)
         {
-            String decree = GetCommandArgument();
+            String decree = new ArgService(CPH).GetCommandArgument(args);
             AnnouncementService announcementService = new AnnouncementService(CPH);
-            announcementService.IssueRoyalDecree(decree);
+            royaltyService.IssueRoyalDecree(decree);
         }
         else
         {
@@ -733,10 +726,11 @@ public class CPHInline : CPHInlineBase
         string redeemer = userService.GetCurrentUserName(args);
 
         if (walletService.UserHasEnoughMoneyToGift(redeemer, ConfigService.PAID_ANNOUNCEMENT_PRICE))
-        {            
-            String announcement = $"User {redeemer} paid {ConfigService.PAID_ANNOUNCEMENT_PRICE} {ConfigService.CURRENCY_NAME} for the following announcement: {GetCommandArgument()}";
+        {
+            string voiceID = ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[VoiceTypes.REGULAR];
+            String announcement = $"User {redeemer} paid {ConfigService.PAID_ANNOUNCEMENT_PRICE} {ConfigService.CURRENCY_NAME} for the following announcement: {new ArgService(CPH).GetCommandArgument(args)}";
             walletService.FinePlayerAmount(redeemer, ConfigService.PAID_ANNOUNCEMENT_PRICE);
-            announceSvc.AnnounceToAudience(announcement, redeemer); 
+            announceSvc.AnnounceToAudience(announcement, redeemer, voiceID); 
         }
         else
         {
@@ -757,8 +751,8 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool Moneyhax()
     {        
-        int.TryParse(GetCommandArgumentAtPosition(1), out int amount);
-        string username = GetCommandArgumentAtPosition(0);
+        int.TryParse(new ArgService(CPH).GetCommandArgumentAtPosition(args, 1), out int amount);
+        string username = new ArgService(CPH).GetCommandArgumentAtPosition(args, 0);
         new AdminService(CPH).MoneyHax(username, amount);
         return true;
     }
@@ -769,7 +763,7 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool GiftItem()
     {
-        string receiver = GetCommandArgumentAtPosition(0);
+        string receiver = new ArgService(CPH).GetCommandArgumentAtPosition(args, 0);
         CPH.LogInfo($"Received {receiver} as Item-Receiver");
         Treasure treasure = new TreasureService().GenerateTreasure();
         CPH.LogInfo($"Generated {treasure.Name} with Value {treasure.Value} as Item to gift");
@@ -786,7 +780,7 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool GiftDebugItem()
     {
-        string receiver = GetCommandArgumentAtPosition(0);
+        string receiver = new ArgService(CPH).GetCommandArgumentAtPosition(args, 0);
         CPH.LogInfo($"Received {receiver} as Item-Receiver");
         Treasure treasure = new Treasure("Debug Item", 1, ItemTier.Common);
         CPH.LogInfo($"Generated {treasure.Name} with Value {treasure.Value} as Item to gift");
@@ -804,39 +798,10 @@ public class CPHInline : CPHInlineBase
     /// <returns></returns>
     public bool PrintInventoryOfPlayer()
     {
+        ArgService argSvc = new ArgService(CPH);
         InventoryService inv = new InventoryService(CPH);
-        inv.ListPlayersInventory(GetCommandArgument());
+        inv.ListPlayersInventory(argSvc.GetCommandArgument(args));
 
         return true;
     }
-
-    /// <summary>
-    ///     Used for debugging, so you don't have to remap Commands all the time
-    /// </summary>
-    /// <returns>
-    ///     Boolean required by Streamerbot
-    /// </returns>
-    public bool Debug()
-    {
-        // WIP
-        //EventService eventSvc = new EventService(CPH);
-        //Event evt = eventSvc.GenerateEvent();
-        new ChooseYourOwnAdventureService(CPH).RunCYOAAdventure();
-        return true;
-    }
-
-
-    public bool VoteOption()
-    {
-        VoteService voteSvc = new VoteService(CPH);  
-        MessageService msgSvc = new MessageService(CPH); 
-        string redeemer = new UserService(CPH).GetCurrentUserName(args);
-        int.TryParse(GetCommandArgument(), out int chosenOption);
-        voteSvc.VoteOnOption(redeemer, chosenOption);
-
-        CPH.LogDebug($"{redeemer} voted Option {chosenOption}");
-        msgSvc.SendTwitchReply("Thank you for voting! Don't worry, you can always change your vote while it is running!");
-        return true;
-    }
-
 }

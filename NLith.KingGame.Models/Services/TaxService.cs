@@ -1,9 +1,7 @@
-﻿using Streamer.bot.Plugin.Interface;
+﻿using NLith.TwitchLib.Models;
+using NLith.TwitchLib.Services;
+using Streamer.bot.Plugin.Interface;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NLith.KingGame.Backend.Services
 {
@@ -28,16 +26,17 @@ namespace NLith.KingGame.Backend.Services
                 VarService varSvc = new VarService(CPH);
                 AnnouncementService announcementSvc = new AnnouncementService(CPH);
 
-                float oldRate = varSvc.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
+                float oldRate = varSvc.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, ConfigService.IS_GAME_PERSISTENT);
                 // In case the rate has never been changed yet, this might throw an error, so we set the default just to be sure     
                 if (oldRate == 0)
                 {
                     oldRate = ConfigService.INITIAL_TAX_RATE;
                 }
                 string announcement = string.Format("Hear ye, hear ye! King {0} changed the taxes from {1}% to {2}%, effective immediately!", new RoyaltyService(CPH).GetKingUsername(), oldRate, newRate);
-                announcementSvc.AnnounceToAudience(announcement, null);
+                string voiceID = ConfigService.VOICE_TYPE_VOICE_ID_MAPPING[VoiceTypes.KING];
+                announcementSvc.AnnounceToAudience(announcement, voiceID);
 
-                varSvc.SetGlobalVariable(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, newRate);
+                varSvc.SetGlobalVariable(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, newRate, ConfigService.IS_GAME_PERSISTENT);
             } else
             {
                 new MessageService(CPH).SendTwitchReply("Taxes can't be negative, use the gift-command instead");
@@ -55,13 +54,13 @@ namespace NLith.KingGame.Backend.Services
             VarService varService = new VarService(CPH);
 
             float taxRate;
-            if (varService.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME) == 0)
+            if (varService.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, ConfigService.IS_GAME_PERSISTENT) == 0)
             {
                 taxRate = ConfigService.INITIAL_TAX_RATE;
             }
             else
             {
-                taxRate = varService.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME);
+                taxRate = varService.GetGlobalVariable<float>(ConfigService.CUSTOM_TAX_RATE_VAR_NAME, ConfigService.IS_GAME_PERSISTENT);
             }
 
             return taxRate;

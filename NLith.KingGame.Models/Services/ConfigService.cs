@@ -1,9 +1,6 @@
-﻿using NLith.KingGame.Backend.Models;
-using System;
+﻿using NLith.TwitchLib.Models;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace NLith.KingGame.Backend.Services
 {
@@ -45,7 +42,6 @@ namespace NLith.KingGame.Backend.Services
         public static string KINGS_SUCCESSOR_VAR_NAME = "successor";
         public static string INVENTORY_VAR_NAME = "inventory";
         public static string INSURANCE_VAR_NAME = "hasInsurance";
-        public static string POLL_VAR_NAME = "currentPoll";
 
 
         // Economy Vars
@@ -105,7 +101,18 @@ namespace NLith.KingGame.Backend.Services
 
         // Filepaths
         // Path to File where active Chatters should be written to (should be truncated on every start)
-        public static string PATH_ACTIVE_CHATTERS_FILE = "./activeChatters.txt";
-        public static string PATH_EVENTS_FILE = "./events.json";
+        private readonly static string CONFIG_BASE_DIR = "C:\\streaming\\Media_for_streaming\\";
+        
+        public readonly static string PATH_STORYTELLING_DIR = Path.Combine(CONFIG_BASE_DIR, "Storylines");
+        public readonly static string PATH_CYOA_DIR = Path.Combine(PATH_STORYTELLING_DIR, "cyoa");
+        public readonly static string PATH_EXPEDITIONS_DIR = Path.Combine(PATH_STORYTELLING_DIR, "expeditions");
+        public readonly static string PATH_ADVENTURES_DIR = Path.Combine(PATH_STORYTELLING_DIR, "adventures");
+        public readonly static string PATH_ACTIVE_CHATTERS_FILE = Path.Combine(CONFIG_BASE_DIR, "Monitoring", "activeChatters.txt");
+        public readonly static string PATH_EVENTS_FILE = Path.Combine(PATH_STORYTELLING_DIR, "events.json");
+
+        // Should be done like that in the future
+        //public static object PATH_STORYTELLING_DIR = Environment.GetEnvironmentVariable("PATH_STORYTELLING_DIR");
+        //public static object PATH_CYOA_DIR = Environment.GetEnvironmentVariable("PATH_CYOA_DIR");
+        
     }
 }
