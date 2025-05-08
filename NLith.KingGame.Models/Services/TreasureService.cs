@@ -179,8 +179,11 @@ namespace NLith.KingGame.Backend.Services
             // First we roll for the Item Tier
             Random random = new Random();
             int roll = random.Next(0, 100);
-
-            if (roll <= TIER_5_ITEM_ROLL_CHANCE)
+            if (roll <= TIER_6_ITEM_ROLL_CHANCE)
+            {
+                tier = ItemTier.Godlike;
+            }
+            else if (roll <= TIER_5_ITEM_ROLL_CHANCE)
             {
                 tier = ItemTier.Legendary;
             }

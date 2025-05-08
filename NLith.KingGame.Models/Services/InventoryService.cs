@@ -116,7 +116,7 @@ namespace NLith.KingGame.Backend.Services
             CPH.LogInfo($"Calculated sell-sum of {lumpSum}");
 
             // Removing all Items 
-            int removedItems = inv.Items.RemoveAll(item => item.Name.Equals(itemName));
+            int removedItems = inv.Items.RemoveAll(item => item.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
             inv.CrunchNumbers();
             CPH.LogInfo($"Removed {removedItems} {itemName} items");
 
